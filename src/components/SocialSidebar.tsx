@@ -11,12 +11,14 @@ import {
   Play,
   Users,
   MessageSquare,
-  ChevronRight,
   ChevronDown,
   Smile,
+  X,
 } from 'lucide-react';
 
 interface SocialSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
   currentUser: PlayerProfileData;
   onlinePlayers: PlayerProfileData[];
   connections: PlayerConnectionItem[];
@@ -58,6 +60,8 @@ function hashIndex(str: string, mod: number): number {
 }
 
 export const SocialSidebar: React.FC<SocialSidebarProps> = ({
+  isOpen,
+  onClose,
   currentUser,
   onlinePlayers,
   connections,
@@ -87,8 +91,14 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
     : [];
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages.length]);
+    if (isOpen) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages.length, isOpen]);
+
+  if (!isOpen) {
+    return null;
+  }
 
   const handleChatSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,51 +115,47 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
   };
 
   return (
-    <aside className="w-full lg:w-80 xl:w-88 shrink-0 bg-[#07100c] border-t lg:border-t-0 lg:border-l border-amber-500/20 flex flex-col h-[540px] lg:h-full overflow-hidden select-none">
-      {/* Top Header matching reference "Online Chat" bar */}
-      <div className="px-4 py-3.5 border-b border-amber-500/15 bg-[#09140f] flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-amber-400/15 border border-amber-400/35 flex items-center justify-center text-amber-300">
+    <aside className="w-72 sm:w-80 xl:w-86 h-full shrink-0 bg-[#07100c] border-l border-amber-500/20 flex flex-col overflow-hidden select-none">
+      {/* Top Header matching reference "Online Chat" bar with Close button */}
+      <div className="px-3.5 py-3 border-b border-amber-500/15 bg-[#09140f] flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-amber-400/15 border border-amber-400/35 flex items-center justify-center text-amber-300 shrink-0">
             <MessageSquare className="w-3.5 h-3.5" />
           </div>
-          <div>
-            <span className="text-xs font-extrabold text-white tracking-wide block leading-none">
+          <div className="min-w-0">
+            <span className="text-xs font-extrabold text-white tracking-wide block leading-none truncate">
               {activeRoom ? activeRoom.name : 'Online Chat'}
             </span>
-            <span className="text-[10px] text-stone-400 font-medium">
-              {activeRoom ? `${seatedPlayers.length}/5 Seated` : '1–5 Player Club Lounge'}
+            <span className="text-[10px] text-stone-400 font-medium truncate block mt-0.5">
+              {activeRoom ? `${seatedPlayers.length}/5 Seated` : '1–5 Player Club Sidebar'}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* Online / Party Count Indicator */}
           <button
             type="button"
             onClick={() => setDirectoryOpen((prev) => !prev)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0d1c15] border border-emerald-500/30 hover:border-amber-400/50 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0d1c15] border border-emerald-500/30 hover:border-amber-400/50 transition-colors cursor-pointer"
             title="Toggle 1–5 Player Party & Friends Drawer"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
             <span className="font-mono-tabular text-xs font-bold text-stone-100">
-              {onlinePlayers.length}
+              {Math.max(1, onlinePlayers.length)}
             </span>
-            <span className="text-[10px] text-amber-300 font-bold ml-0.5">
-              ({activeRoom ? `${seatedPlayers.length}/5` : 'Party'})
-            </span>
+            <ChevronDown className="w-3 h-3 text-amber-300" />
           </button>
 
+          {/* Close Chat Button */}
           <button
             type="button"
-            onClick={() => setDirectoryOpen((prev) => !prev)}
-            className="w-7 h-7 rounded-lg bg-[#0d1c15] border border-stone-800 hover:border-amber-400/40 flex items-center justify-center text-stone-400 hover:text-amber-300 transition-colors cursor-pointer"
-            title={directoryOpen ? 'Hide 1–5 Player Party Drawer' : 'Show 1–5 Player Party & Friends'}
+            onClick={onClose}
+            className="px-2 py-1 rounded-lg bg-[#0d1c15] border border-stone-800 hover:border-rose-400/50 hover:bg-rose-500/15 flex items-center gap-1 text-stone-300 hover:text-rose-300 text-[11px] font-bold transition-colors cursor-pointer"
+            title="Close Chat Sidebar"
           >
-            {directoryOpen ? (
-              <ChevronDown className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5" />
-            )}
+            <X className="w-3.5 h-3.5" />
+            <span>Close</span>
           </button>
         </div>
       </div>
@@ -161,7 +167,7 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
             <div className="grid grid-cols-4 gap-1 p-0.5 bg-[#050b08] rounded-xl border border-stone-800">
               {[
                 { id: 'party' as const, label: `Seats (${seatedPlayers.length || 1}/5)` },
-                { id: 'online' as const, label: `Online (${onlinePlayers.length})` },
+                { id: 'online' as const, label: `Online (${Math.max(1, onlinePlayers.length)})` },
                 { id: 'friends' as const, label: `Friends (${friendsList.length})` },
                 { id: 'recent' as const, label: 'Recent' },
               ].map((t) => (
@@ -181,7 +187,7 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
             </div>
           </div>
 
-          <div className="max-h-48 overflow-y-auto px-3 py-2 space-y-1.5">
+          <div className="max-h-44 overflow-y-auto px-3 py-2 space-y-1.5">
             {directoryTab === 'party' && (
               <div className="space-y-1">
                 {Array.from({ length: 5 }).map((_, idx) => {
@@ -419,7 +425,7 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
       <div className="px-3 py-2 border-b border-stone-800/80 bg-[#08130e] flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400">
           <Users className="w-3 h-3 text-amber-400" />
-          <span>Table Party:</span>
+          <span>1–5 Party:</span>
         </div>
         <div className="flex items-center gap-1">
           {Array.from({ length: 5 }).map((_, idx) => {
@@ -434,7 +440,7 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
                 type="button"
                 onClick={() => {
                   setDirectoryTab(seatPlayer ? 'party' : 'online');
-                  setDirectoryOpen(true);
+                  setDirectoryOpen((prev) => !prev);
                 }}
                 title={
                   seatPlayer
@@ -454,7 +460,7 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
         </div>
       </div>
 
-      {/* Chat Message Feed — Styled as dark rounded cards with avatar, badge, time & text */}
+      {/* Chat Message Feed — Always scrollable inside the right-hand sidebar */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2.5 bg-[#060d0a]">
         {chatMessages.map((m) => {
           if (m.isSystem) {
@@ -482,16 +488,15 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
           return (
             <div
               key={m.id}
-              className={`p-3 rounded-2xl border transition-colors ${
+              className={`p-2.5 rounded-2xl border transition-colors ${
                 isMe
                   ? 'bg-[#0f221a] border-amber-400/35'
                   : 'bg-[#0b1712] border-stone-800/90 hover:border-stone-700'
               }`}
             >
               <div className="flex items-start gap-2.5">
-                {/* Circular Avatar with Status Ring */}
                 <div
-                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center font-display text-xs font-bold shrink-0 ${ringStyle}`}
+                  className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-display text-[10px] font-bold shrink-0 ${ringStyle}`}
                 >
                   {m.senderName.slice(0, 2).toUpperCase()}
                 </div>
@@ -530,7 +535,7 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
       {showEmojiPicker && (
         <div className="px-3 py-2 bg-[#0b1712] border-t border-amber-500/25 flex items-center justify-between shrink-0">
           <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
-            Live Reactions
+            Reactions
           </span>
           <div className="flex items-center gap-1">
             {REACTION_EMOJIS.map((emoji) => (
@@ -550,11 +555,11 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
         </div>
       )}
 
-      {/* Bottom Input Box matching reference ("Write message ..." + emoji icon + square send button) */}
-      <div className="p-3 bg-[#08120e] border-t border-amber-500/15 shrink-0">
+      {/* Bottom Input Box */}
+      <div className="p-2.5 bg-[#08120e] border-t border-amber-500/15 shrink-0">
         <form
           onSubmit={handleChatSubmit}
-          className="bg-[#0d1a14] border border-stone-800 focus-within:border-amber-400/50 rounded-2xl p-2 flex items-center gap-2"
+          className="bg-[#0d1a14] border border-stone-800 focus-within:border-amber-400/50 rounded-2xl p-1.5 flex items-center gap-1.5"
         >
           <input
             type="text"
@@ -562,7 +567,7 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
             onChange={(e) => setChatInput(e.target.value)}
             placeholder="Write message ..."
             maxLength={240}
-            className="flex-1 bg-transparent px-2 py-1.5 text-xs text-stone-100 placeholder-stone-500 focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent px-2 py-1.5 text-xs text-stone-100 placeholder-stone-500 focus:outline-none"
           />
 
           <button
@@ -581,9 +586,9 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
           <button
             type="submit"
             title="Send Message"
-            className="w-9 h-9 rounded-xl btn-arcade-gold flex items-center justify-center cursor-pointer shrink-0"
+            className="w-8 h-8 rounded-xl btn-arcade-gold flex items-center justify-center cursor-pointer shrink-0"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" />
           </button>
         </form>
       </div>

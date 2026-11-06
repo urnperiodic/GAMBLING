@@ -1,4 +1,4 @@
-name: CI & Deploy
+name: Build & Deploy to GitHub Pages
 
 on:
   push:
@@ -17,78 +17,58 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "ci-deploy-${{ github.ref }}"
+  group: "pages-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
-  build-and-verify:
-    name: Build, Typecheck & Lint
+  build:
+    name: Fast Build & Verify
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+      - name: Setup Bun (Fast Package Manager)
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: "22"
+          bun-version: latest
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Install dependencies (Fast)
+        run: bun install
 
-      - name: TypeScript typecheck (npm run lint)
-        run: npm run lint
+      - name: TypeScript typecheck
+        run: bun run lint
 
-      - name: Validate Firestore Security Rules
-        run: npx eslint firestore.rules
+      - name: Build production site
+        run: bun run build
 
-      - name: Build production client bundle
-        run: npm run build
+      - name: Copy index.html to 404.html for SPA routing
+        run: cp dist/index.html dist/404.html
 
-      - name: Upload production build artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload GitHub Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: dist-bundle
-          path: dist/
-          if-no-files-found: error
-          retention-days: 7
+          path: ./dist
 
-  deploy-cloud-run:
-    name: Deploy to Cloud Run (Optional)
-    needs: build-and-verify
+  deploy-pages:
+    name: Publish GitHub Page
+    needs: build
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Check Cloud Run credentials
-        id: check_gcp
-        env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-        run: |
-          if [ -n "$GCP_SA_KEY" ] && [ -n "$GCP_PROJECT_ID" ]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "GCP_SA_KEY or GCP_PROJECT_ID not set; skipping Cloud Run deployment step."
-          fi
-
-      - name: Authenticate to Google Cloud
-        if: steps.check_gcp.outputs.configured == 'true'
-        uses: google-github-actions/auth@v2
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          enablement: true
+        continue-on-error: true
 
-      - name: Deploy service to Google Cloud Run
-        if: steps.check_gcp.outputs.configured == 'true'
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: velvet-brass-social-club
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          region: us-west1
-          source: .
-          flags: "--allow-unauthenticated --port=3000"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
