@@ -1,0 +1,6 @@
+{
+  "name": "Velvet & Brass Social Club",
+  "description": "Multiplayer social arcade & casino parlor with Plinko, Blackjack, Roulette, Slots, Video Poker, and Dice using virtual chips.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

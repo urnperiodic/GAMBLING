@@ -1,0 +1,358 @@
+{
+  "entities": {
+    "PlayerProfile": {
+      "title": "PlayerProfile",
+      "description": "Anonymous pseudonymous player profile with virtual chip balance, progression, cosmetics, and online status.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the player",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Pseudonymous player handle",
+          "minLength": 2,
+          "maxLength": 32
+        },
+        "chips": {
+          "type": "integer",
+          "description": "Virtual chip balance (zero real-world value)"
+        },
+        "xp": {
+          "type": "integer",
+          "description": "Total experience points earned"
+        },
+        "level": {
+          "type": "integer",
+          "description": "Current player progression level"
+        },
+        "chipTheme": {
+          "type": "string",
+          "description": "Equipped virtual chip color palette",
+          "enum": ["classic-brass", "obsidian-gold", "emerald-royale", "crimson-velvet", "cyber-platinum"]
+        },
+        "tableTheme": {
+          "type": "string",
+          "description": "Equipped table felt visual theme",
+          "enum": ["emerald-felt", "mahogany-club", "midnight-velvet", "royal-burgundy"]
+        },
+        "gamesPlayed": {
+          "type": "integer",
+          "description": "Total rounds played across all games"
+        },
+        "totalWon": {
+          "type": "integer",
+          "description": "Cumulative virtual chips won"
+        },
+        "biggestWin": {
+          "type": "integer",
+          "description": "Largest single round virtual chip payout"
+        },
+        "dailyStreak": {
+          "type": "integer",
+          "description": "Consecutive daily login reward streak"
+        },
+        "lastDailyClaim": {
+          "type": "string",
+          "description": "ISO date string of last daily login claim",
+          "maxLength": 40
+        },
+        "lastAllowanceClaim": {
+          "type": "string",
+          "description": "ISO date string of last free chip allowance claim",
+          "maxLength": 40
+        },
+        "status": {
+          "type": "string",
+          "description": "Online presence status",
+          "enum": ["online", "in-game", "spectating", "offline"]
+        },
+        "currentGame": {
+          "type": "string",
+          "description": "Currently active game type or lobby",
+          "maxLength": 32
+        },
+        "currentRoomId": {
+          "type": "string",
+          "description": "Currently active multiplayer room ID",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "chips",
+        "xp",
+        "level",
+        "chipTheme",
+        "tableTheme",
+        "gamesPlayed",
+        "totalWon",
+        "biggestWin",
+        "dailyStreak",
+        "lastDailyClaim",
+        "lastAllowanceClaim",
+        "status",
+        "currentGame",
+        "currentRoomId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChipTransaction": {
+      "title": "ChipTransaction",
+      "description": "Audit record of virtual chip movements for a player.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Owner UID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "type": {
+          "type": "string",
+          "description": "Category of virtual chip movement",
+          "enum": ["wager", "payout", "daily-reward", "allowance", "achievement-bonus", "starting-balance"]
+        },
+        "game": {
+          "type": "string",
+          "description": "Game or system source of transaction",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "amount": {
+          "type": "integer",
+          "description": "Signed virtual chip delta"
+        },
+        "balanceAfter": {
+          "type": "integer",
+          "description": "Virtual chip balance after transaction"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Human-readable description of virtual chip movement",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        }
+      },
+      "required": ["uid", "type", "game", "amount", "balanceAfter", "summary", "createdAt"]
+    },
+    "PlayerConnection": {
+      "title": "PlayerConnection",
+      "description": "Friend or recent player relationship stored under a player profile.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Owner player UID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetUid": {
+          "type": "string",
+          "description": "Connected friend or recent player UID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetName": {
+          "type": "string",
+          "description": "Display name of the connected player",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "relationType": {
+          "type": "string",
+          "description": "Relationship category",
+          "enum": ["friend", "recent"]
+        },
+        "lastPlayedGame": {
+          "type": "string",
+          "description": "Last game played together",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["uid", "targetUid", "targetName", "relationType", "lastPlayedGame", "createdAt", "updatedAt"]
+    },
+    "GameRoom": {
+      "title": "GameRoom",
+      "description": "Multiplayer casino parlor room metadata.",
+      "type": "object",
+      "properties": {
+        "hostId": {
+          "type": "string",
+          "description": "Host player UID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "hostName": {
+          "type": "string",
+          "description": "Host player display name",
+          "minLength": 2,
+          "maxLength": 32
+        },
+        "name": {
+          "type": "string",
+          "description": "Room title",
+          "minLength": 2,
+          "maxLength": 48
+        },
+        "gameType": {
+          "type": "string",
+          "description": "Game hosted in this room",
+          "enum": ["plinko", "blackjack", "roulette", "slots", "videopoker", "dice"]
+        },
+        "isPrivate": {
+          "type": "boolean",
+          "description": "Whether the room requires a passcode"
+        },
+        "minBet": {
+          "type": "integer",
+          "description": "Minimum virtual chip wager for the table"
+        },
+        "status": {
+          "type": "string",
+          "description": "Room lifecycle state",
+          "enum": ["open", "playing", "closed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["hostId", "hostName", "name", "gameType", "isPrivate", "minBet", "status", "createdAt", "updatedAt"]
+    },
+    "GameInvitation": {
+      "title": "GameInvitation",
+      "description": "Direct invitation from one player to another to join a multiplayer table.",
+      "type": "object",
+      "properties": {
+        "senderId": {
+          "type": "string",
+          "description": "UID of inviting player",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Display name of inviting player",
+          "minLength": 2,
+          "maxLength": 32
+        },
+        "recipientId": {
+          "type": "string",
+          "description": "UID of invited player",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "roomId": {
+          "type": "string",
+          "description": "Target multiplayer room ID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "roomName": {
+          "type": "string",
+          "description": "Target room display title",
+          "minLength": 2,
+          "maxLength": 48
+        },
+        "gameType": {
+          "type": "string",
+          "description": "Game type of the target room",
+          "enum": ["plinko", "blackjack", "roulette", "slots", "videopoker", "dice"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Invitation status",
+          "enum": ["pending", "accepted", "declined"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": ["senderId", "senderName", "recipientId", "roomId", "roomName", "gameType", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/profiles/{userId}": {
+      "schema": {
+        "$ref": "#/entities/PlayerProfile"
+      },
+      "description": "Pseudonymous player profiles and virtual chip balances"
+    },
+    "/profiles/{userId}/transactions/{txId}": {
+      "schema": {
+        "$ref": "#/entities/ChipTransaction"
+      },
+      "description": "Player virtual chip movement history"
+    },
+    "/profiles/{userId}/connections/{targetUserId}": {
+      "schema": {
+        "$ref": "#/entities/PlayerConnection"
+      },
+      "description": "Friends and recent players for a given user"
+    },
+    "/rooms/{roomId}": {
+      "schema": {
+        "$ref": "#/entities/GameRoom"
+      },
+      "description": "Multiplayer game rooms"
+    },
+    "/invitations/{inviteId}": {
+      "schema": {
+        "$ref": "#/entities/GameInvitation"
+      },
+      "description": "Direct game invitations between players"
+    }
+  }
+}

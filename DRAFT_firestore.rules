@@ -1,0 +1,294 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 4.1: Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Hardened Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprint: PlayerProfile
+    function isValidPlayerProfile(data) {
+      return data.keys().hasAll([
+          'uid', 'displayName', 'chips', 'xp', 'level', 'chipTheme', 'tableTheme',
+          'gamesPlayed', 'totalWon', 'biggestWin', 'dailyStreak', 'lastDailyClaim',
+          'lastAllowanceClaim', 'status', 'currentGame', 'currentRoomId', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'displayName', 'chips', 'xp', 'level', 'chipTheme', 'tableTheme',
+          'gamesPlayed', 'totalWon', 'biggestWin', 'dailyStreak', 'lastDailyClaim',
+          'lastAllowanceClaim', 'status', 'currentGame', 'currentRoomId', 'createdAt', 'updatedAt'
+        ])
+        && data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.uid == request.auth.uid
+        && data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 32
+        && data.chips is int && data.chips >= 0 && data.chips <= 1000000000
+        && data.xp is int && data.xp >= 0 && data.xp <= 1000000000
+        && data.level is int && data.level >= 1 && data.level <= 1000
+        && data.chipTheme is string && data.chipTheme.size() <= 32
+        && data.chipTheme in ['classic-brass', 'obsidian-gold', 'emerald-royale', 'crimson-velvet', 'cyber-platinum']
+        && data.tableTheme is string && data.tableTheme.size() <= 32
+        && data.tableTheme in ['emerald-felt', 'mahogany-club', 'midnight-velvet', 'royal-burgundy']
+        && data.gamesPlayed is int && data.gamesPlayed >= 0 && data.gamesPlayed <= 10000000
+        && data.totalWon is int && data.totalWon >= 0 && data.totalWon <= 1000000000
+        && data.biggestWin is int && data.biggestWin >= 0 && data.biggestWin <= 1000000000
+        && data.dailyStreak is int && data.dailyStreak >= 0 && data.dailyStreak <= 10000
+        && data.lastDailyClaim is string && data.lastDailyClaim.size() <= 40
+        && data.lastAllowanceClaim is string && data.lastAllowanceClaim.size() <= 40
+        && data.status is string && data.status.size() <= 16
+        && data.status in ['online', 'in-game', 'spectating', 'offline']
+        && data.currentGame is string && data.currentGame.size() <= 32
+        && data.currentRoomId is string && data.currentRoomId.size() <= 128
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: ChipTransaction
+    function isValidChipTransaction(data) {
+      return data.keys().hasAll(['uid', 'type', 'game', 'amount', 'balanceAfter', 'summary', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'type', 'game', 'amount', 'balanceAfter', 'summary', 'createdAt'])
+        && data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.uid == request.auth.uid
+        && data.type is string && data.type.size() <= 32
+        && data.type in ['wager', 'payout', 'daily-reward', 'allowance', 'achievement-bonus', 'starting-balance']
+        && data.game is string && data.game.size() >= 1 && data.game.size() <= 40
+        && data.amount is int && data.amount >= -100000000 && data.amount <= 100000000
+        && data.balanceAfter is int && data.balanceAfter >= 0 && data.balanceAfter <= 1000000000
+        && data.summary is string && data.summary.size() >= 1 && data.summary.size() <= 160
+        && data.createdAt is timestamp;
+    }
+
+    // Validation Blueprint: PlayerConnection
+    function isValidPlayerConnection(data) {
+      return data.keys().hasAll(['uid', 'targetUid', 'targetName', 'relationType', 'lastPlayedGame', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'targetUid', 'targetName', 'relationType', 'lastPlayedGame', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.uid == request.auth.uid
+        && data.targetUid is string && data.targetUid.size() >= 1 && data.targetUid.size() <= 128 && data.targetUid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.targetName is string && data.targetName.size() >= 1 && data.targetName.size() <= 32
+        && data.relationType is string && data.relationType.size() <= 16
+        && data.relationType in ['friend', 'recent']
+        && data.lastPlayedGame is string && data.lastPlayedGame.size() <= 32
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: GameRoom
+    function isValidGameRoom(data) {
+      return data.keys().hasAll(['hostId', 'hostName', 'name', 'gameType', 'isPrivate', 'minBet', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['hostId', 'hostName', 'name', 'gameType', 'isPrivate', 'minBet', 'status', 'createdAt', 'updatedAt'])
+        && data.hostId is string && data.hostId.size() >= 1 && data.hostId.size() <= 128 && data.hostId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.hostId == request.auth.uid
+        && data.hostName is string && data.hostName.size() >= 2 && data.hostName.size() <= 32
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 48
+        && data.gameType is string && data.gameType.size() <= 16
+        && data.gameType in ['plinko', 'blackjack', 'roulette', 'slots', 'videopoker', 'dice']
+        && data.isPrivate is bool
+        && data.minBet is int && data.minBet >= 10 && data.minBet <= 1000000
+        && data.status is string && data.status.size() <= 16
+        && data.status in ['open', 'playing', 'closed']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: GameInvitation
+    function isValidGameInvitation(data) {
+      return data.keys().hasAll(['senderId', 'senderName', 'recipientId', 'roomId', 'roomName', 'gameType', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['senderId', 'senderName', 'recipientId', 'roomId', 'roomName', 'gameType', 'status', 'createdAt', 'updatedAt'])
+        && data.senderId is string && data.senderId.size() >= 1 && data.senderId.size() <= 128 && data.senderId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.senderId != data.recipientId
+        && data.senderName is string && data.senderName.size() >= 2 && data.senderName.size() <= 32
+        && data.recipientId is string && data.recipientId.size() >= 1 && data.recipientId.size() <= 128 && data.recipientId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 128 && data.roomId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.roomName is string && data.roomName.size() >= 2 && data.roomName.size() <= 48
+        && data.gameType is string && data.gameType.size() <= 16
+        && data.gameType in ['plinko', 'blackjack', 'roulette', 'slots', 'videopoker', 'dice']
+        && data.status is string && data.status.size() <= 16
+        && data.status in ['pending', 'accepted', 'declined']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Collection: /profiles/{userId}
+    match /profiles/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && existing().uid is string;
+      allow list: if isSignedIn() && existing().status in ['online', 'in-game', 'spectating', 'offline'];
+
+      allow create: if isSignedIn()
+        && isValidId(userId)
+        && userId == request.auth.uid
+        && isValidPlayerProfile(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn()
+        && isValidId(userId)
+        && userId == request.auth.uid
+        && isValidPlayerProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Gameplay & Progression Sync
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'chips', 'xp', 'level', 'gamesPlayed', 'totalWon', 'biggestWin',
+            'dailyStreak', 'lastDailyClaim', 'lastAllowanceClaim', 'updatedAt'
+          ]) ||
+          // Action 2: Profile Customization & Presence Update
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'displayName', 'chipTheme', 'tableTheme', 'status', 'currentGame', 'currentRoomId', 'updatedAt'
+          ])
+        );
+
+      allow delete: if false;
+
+      // Subcollection: /profiles/{userId}/transactions/{txId}
+      match /transactions/{txId} {
+        allow get: if isSignedIn()
+          && isValidId(userId)
+          && isValidId(txId)
+          && userId == request.auth.uid
+          && existing().uid == request.auth.uid
+          && get(/databases/$(database)/documents/profiles/$(userId)).data.uid == request.auth.uid;
+
+        allow list: if isSignedIn()
+          && userId == request.auth.uid
+          && existing().uid == request.auth.uid;
+
+        allow create: if isSignedIn()
+          && isValidId(userId)
+          && isValidId(txId)
+          && userId == request.auth.uid
+          && isValidChipTransaction(incoming())
+          && incoming().createdAt == request.time
+          && get(/databases/$(database)/documents/profiles/$(userId)).data.uid == request.auth.uid;
+
+        allow update, delete: if false;
+      }
+
+      // Subcollection: /profiles/{userId}/connections/{targetUserId}
+      match /connections/{targetUserId} {
+        allow get: if isSignedIn()
+          && isValidId(userId)
+          && isValidId(targetUserId)
+          && userId == request.auth.uid
+          && existing().uid == request.auth.uid
+          && get(/databases/$(database)/documents/profiles/$(userId)).data.uid == request.auth.uid;
+
+        allow list: if isSignedIn()
+          && userId == request.auth.uid
+          && existing().uid == request.auth.uid;
+
+        allow create: if isSignedIn()
+          && isValidId(userId)
+          && isValidId(targetUserId)
+          && userId == request.auth.uid
+          && targetUserId != request.auth.uid
+          && incoming().targetUid == targetUserId
+          && isValidPlayerConnection(incoming())
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && get(/databases/$(database)/documents/profiles/$(userId)).data.uid == request.auth.uid;
+
+        allow update: if isSignedIn()
+          && isValidId(userId)
+          && isValidId(targetUserId)
+          && userId == request.auth.uid
+          && isValidPlayerConnection(incoming())
+          && incoming().uid == existing().uid
+          && incoming().targetUid == existing().targetUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['targetName', 'relationType', 'lastPlayedGame', 'updatedAt'])
+          && get(/databases/$(database)/documents/profiles/$(userId)).data.uid == request.auth.uid;
+
+        allow delete: if isSignedIn()
+          && isValidId(userId)
+          && isValidId(targetUserId)
+          && userId == request.auth.uid
+          && get(/databases/$(database)/documents/profiles/$(userId)).data.uid == request.auth.uid;
+      }
+    }
+
+    // Collection: /rooms/{roomId}
+    match /rooms/{roomId} {
+      allow get: if isSignedIn() && isValidId(roomId) && existing().status in ['open', 'playing', 'closed'];
+      allow list: if isSignedIn() && existing().status in ['open', 'playing'];
+
+      allow create: if isSignedIn()
+        && isValidId(roomId)
+        && isValidGameRoom(incoming())
+        && incoming().status == 'open'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/profiles/$(request.auth.uid));
+
+      allow update: if isSignedIn()
+        && isValidId(roomId)
+        && isValidGameRoom(incoming())
+        && existing().status != 'closed'
+        && incoming().hostId == existing().hostId
+        && incoming().gameType == existing().gameType
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'isPrivate', 'minBet', 'status', 'updatedAt'])
+        && exists(/databases/$(database)/documents/profiles/$(request.auth.uid));
+
+      allow delete: if false;
+    }
+
+    // Collection: /invitations/{inviteId}
+    match /invitations/{inviteId} {
+      allow get: if isSignedIn()
+        && isValidId(inviteId)
+        && (existing().senderId == request.auth.uid || existing().recipientId == request.auth.uid);
+
+      allow list: if isSignedIn()
+        && (existing().senderId == request.auth.uid || existing().recipientId == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && isValidId(inviteId)
+        && isValidGameInvitation(incoming())
+        && incoming().senderId == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/rooms/$(incoming().roomId))
+        && exists(/databases/$(database)/documents/profiles/$(incoming().recipientId));
+
+      allow update: if isSignedIn()
+        && isValidId(inviteId)
+        && isValidGameInvitation(incoming())
+        && existing().status == 'pending'
+        && existing().recipientId == request.auth.uid
+        && incoming().senderId == existing().senderId
+        && incoming().senderName == existing().senderName
+        && incoming().recipientId == existing().recipientId
+        && incoming().roomId == existing().roomId
+        && incoming().roomName == existing().roomName
+        && incoming().gameType == existing().gameType
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().status in ['accepted', 'declined']
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      allow delete: if false;
+    }
+  }
+}

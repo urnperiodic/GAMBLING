@@ -1,0 +1,95 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "ci-deploy-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  build-and-verify:
+    name: Build, Typecheck & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: TypeScript typecheck (npm run lint)
+        run: npm run lint
+
+      - name: Validate Firestore Security Rules
+        run: npx eslint firestore.rules
+
+      - name: Build production client bundle
+        run: npm run build
+
+      - name: Upload production build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-bundle
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-cloud-run:
+    name: Deploy to Cloud Run (Optional)
+    needs: build-and-verify
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Cloud Run credentials
+        id: check_gcp
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          if [ -n "$GCP_SA_KEY" ] && [ -n "$GCP_PROJECT_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "GCP_SA_KEY or GCP_PROJECT_ID not set; skipping Cloud Run deployment step."
+          fi
+
+      - name: Authenticate to Google Cloud
+        if: steps.check_gcp.outputs.configured == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Deploy service to Google Cloud Run
+        if: steps.check_gcp.outputs.configured == 'true'
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: velvet-brass-social-club
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          region: us-west1
+          source: .
+          flags: "--allow-unauthenticated --port=3000"

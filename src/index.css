@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Cinzel', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #07110d;
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.12) 0%, transparent 55%),
+      radial-gradient(circle at 15% 85%, rgba(16, 185, 129, 0.08) 0%, transparent 45%);
+    color: #f4f1ea;
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  h1, h2, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Tactile 3D Arcade Buttons */
+.btn-arcade-gold {
+  background: linear-gradient(180deg, #fde047 0%, #eab308 55%, #ca8a04 100%);
+  color: #1c1917;
+  box-shadow: 0 4px 0 #854d0e, 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
+}
+.btn-arcade-gold:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn-arcade-gold:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #854d0e, 0 2px 6px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.btn-arcade-gold:disabled {
+  background: #292524;
+  color: #78716c;
+  box-shadow: 0 3px 0 #1c1917;
+  cursor: not-allowed;
+}
+
+.btn-arcade-emerald {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 55%, #059669 100%);
+  color: #052e16;
+  box-shadow: 0 4px 0 #064e3b, 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
+}
+.btn-arcade-emerald:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn-arcade-emerald:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #064e3b, 0 2px 6px rgba(0, 0, 0, 0.55);
+}
+
+.btn-arcade-crimson {
+  background: linear-gradient(180deg, #fb7185 0%, #e11d48 55%, #be123c 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 0 #881337, 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
+}
+.btn-arcade-crimson:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #881337;
+}
+
+.btn-arcade-dark {
+  background: linear-gradient(180deg, #293530 0%, #17221d 100%);
+  color: #e7e5e4;
+  box-shadow: 0 3px 0 #090f0c, inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.btn-arcade-dark:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #090f0c;
+}
+
+/* Casino Table Felt Texture & Wood Rail */
+.casino-table-rail {
+  border: 6px solid #452315;
+  box-shadow: 
+    inset 0 0 45px rgba(0, 0, 0, 0.75),
+    0 0 0 2px #d4af37,
+    0 16px 36px rgba(0, 0, 0, 0.7);
+}
+
+.casino-felt-surface {
+  background-color: #0b291e;
+  background-image: 
+    radial-gradient(ellipse at center, rgba(22, 101, 52, 0.42) 0%, rgba(6, 28, 20, 0.92) 100%);
+}
+
+/* 3D Casino Chip Styling */
+.casino-chip {
+  position: relative;
+  border-radius: 9999px;
+  border: 3px dashed rgba(255, 255, 255, 0.75);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.65), 0 6px 10px rgba(0, 0, 0, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.35);
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.12s ease;
+}
+.casino-chip:hover:not(:disabled) {
+  transform: translateY(-4px) scale(1.06);
+}
+.casino-chip:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+@keyframes floatUpFade {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-48px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-96px) scale(1);
+  }
+}
+
+.animate-reaction {
+  animation: floatUpFade 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
