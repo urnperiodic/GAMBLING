@@ -462,7 +462,16 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
 
       {/* Chat Message Feed — Always scrollable inside the right-hand sidebar */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2.5 bg-[#060d0a]">
-        {chatMessages.map((m) => {
+        {chatMessages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center px-4 py-8 text-stone-500">
+            <MessageSquare className="w-6 h-6 text-stone-600 mb-2" />
+            <p className="text-xs font-semibold text-stone-400">No messages yet</p>
+            <p className="text-[11px] text-stone-500 mt-0.5">
+              Invite 1–4 friends to your table and start chatting live.
+            </p>
+          </div>
+        ) : (
+          chatMessages.map((m) => {
           if (m.isSystem) {
             return (
               <div
@@ -527,7 +536,8 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
               </div>
             </div>
           );
-        })}
+        })
+        )}
         <div ref={chatEndRef} />
       </div>
 

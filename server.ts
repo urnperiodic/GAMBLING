@@ -169,29 +169,9 @@ function initDefaultRooms() {
       createdAt: new Date().toISOString(),
       isDefault: true,
     });
-    roomChats.set(d.id, [
-      {
-        id: `sys_${d.id}`,
-        roomId: d.id,
-        senderId: 'system',
-        senderName: 'Floor Director',
-        text: `Welcome to ${d.name}. Virtual chips have zero real-world monetary value.`,
-        timestamp: new Date().toISOString(),
-        isSystem: true,
-      },
-    ]);
+    roomChats.set(d.id, []);
   }
-  roomChats.set('lobby', [
-    {
-      id: 'sys_lobby_welcome',
-      roomId: 'lobby',
-      senderId: 'system',
-      senderName: 'Club Concierge',
-      text: 'Welcome to Velvet & Brass Social Club. Invite friends, spectate live tables, or join any parlor room.',
-      timestamp: new Date().toISOString(),
-      isSystem: true,
-    },
-  ]);
+  roomChats.set('lobby', []);
 }
 
 initDefaultRooms();
@@ -420,8 +400,16 @@ async function startServer() {
           if (!profile) {
             profile = createInitialProfile(rawUid, payload?.displayName);
           } else {
+            if (
+              typeof payload?.displayName === 'string' &&
+              payload.displayName.trim().length >= 2 &&
+              !payload.displayName.startsWith('Patron_')
+            ) {
+              profile.displayName = payload.displayName.trim().slice(0, 32);
+            }
             profile.status = profile.currentRoomId && profile.currentRoomId !== 'lobby' ? 'in-game' : 'online';
             profile.updatedAt = new Date().toISOString();
+            savePersistedData();
           }
 
           ws.send(

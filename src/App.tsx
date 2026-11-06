@@ -69,6 +69,7 @@ import {
 
 const LOCAL_UID_KEY = 'vb_parlor_anon_uid_v1';
 const LOCAL_PROFILE_STORAGE_KEY = 'vb_parlor_profile_cache_v1';
+const LOCAL_NICKNAME_KEY = 'vb_parlor_nickname_v1';
 
 function getOrCreateLocalAnonymousUid(): string {
   const existing = localStorage.getItem(LOCAL_UID_KEY);
@@ -83,82 +84,47 @@ function getOrCreateLocalAnonymousUid(): string {
 const DEFAULT_ROOMS: MultiplayerRoom[] = [
   {
     id: 'room_plinko_main',
-    hostId: 'house_dealer',
-    hostName: 'Lady Fortuna',
+    hostId: 'house',
+    hostName: 'The House',
     name: 'Golden Plinko Salon',
     gameType: 'plinko',
     isPrivate: false,
     minBet: 10,
     status: 'open',
-    participants: [
-      {
-        uid: 'patron_annette',
-        displayName: 'Annette Black',
-        level: 4,
-        chipTheme: 'classic-brass',
-        role: 'player',
-        lastAction: 'Hit 10x Pocket',
-      },
-      {
-        uid: 'patron_guy',
-        displayName: 'Guy Hawkins',
-        level: 3,
-        chipTheme: 'emerald-royale',
-        role: 'player',
-        lastAction: 'Dropping orbs',
-      },
-    ],
+    participants: [],
     recentActivity: [],
     createdAt: new Date().toISOString(),
   },
   {
     id: 'room_blackjack_main',
-    hostId: 'house_dealer',
-    hostName: 'Monsieur Laurent',
+    hostId: 'house',
+    hostName: 'The House',
     name: 'Velvet 21 Club Table',
     gameType: 'blackjack',
     isPrivate: false,
     minBet: 25,
     status: 'open',
-    participants: [
-      {
-        uid: 'patron_darlene',
-        displayName: 'Darlene Robertson',
-        level: 6,
-        chipTheme: 'obsidian-gold',
-        role: 'player',
-        lastAction: 'Blackjack 21!',
-      },
-    ],
+    participants: [],
     recentActivity: [],
     createdAt: new Date().toISOString(),
   },
   {
     id: 'room_roulette_main',
-    hostId: 'house_dealer',
-    hostName: 'Countess Vance',
+    hostId: 'house',
+    hostName: 'The House',
     name: 'Monte Carlo Zero Wheel',
     gameType: 'roulette',
     isPrivate: false,
     minBet: 15,
     status: 'open',
-    participants: [
-      {
-        uid: 'patron_ralph',
-        displayName: 'Ralph Edwards',
-        level: 5,
-        chipTheme: 'crimson-velvet',
-        role: 'player',
-        lastAction: 'Straight 17 Red',
-      },
-    ],
+    participants: [],
     recentActivity: [],
     createdAt: new Date().toISOString(),
   },
   {
     id: 'room_slots_main',
-    hostId: 'house_dealer',
-    hostName: 'Archibald Brass',
+    hostId: 'house',
+    hostName: 'The House',
     name: 'Crown 777 Jackpot Lounge',
     gameType: 'slots',
     isPrivate: false,
@@ -170,32 +136,7 @@ const DEFAULT_ROOMS: MultiplayerRoom[] = [
   },
 ];
 
-const DEFAULT_CHAT_MESSAGES: ChatMessage[] = [
-  {
-    id: 'seed_msg_1',
-    roomId: 'lobby',
-    senderId: 'patron_annette',
-    senderName: 'Annette Black',
-    text: 'Just hit a 24x pocket on the Golden Plinko Pyramid! Seats 3–5 are open.',
-    timestamp: new Date(Date.now() - 180000).toISOString(),
-  },
-  {
-    id: 'seed_msg_2',
-    roomId: 'lobby',
-    senderId: 'patron_guy',
-    senderName: 'Guy Hawkins',
-    text: 'Cracked the 10-second Brass Vault puzzle for the +1,500 free chip refill.',
-    timestamp: new Date(Date.now() - 120000).toISOString(),
-  },
-  {
-    id: 'seed_msg_3',
-    roomId: 'lobby',
-    senderId: 'patron_darlene',
-    senderName: 'Darlene Robertson',
-    text: 'Who wants to join our 5-seat Blackjack table? 3 seats left!',
-    timestamp: new Date(Date.now() - 45000).toISOString(),
-  },
-];
+const DEFAULT_CHAT_MESSAGES: ChatMessage[] = [];
 
 interface LiveFeedBetRow {
   id: string;
@@ -208,58 +149,7 @@ interface LiveFeedBetRow {
   payout: number;
 }
 
-const INITIAL_PARLOR_FEED: LiveFeedBetRow[] = [
-  {
-    id: 'seed_1',
-    gameType: 'plinko',
-    gameTitle: 'Plinko Pyramid',
-    user: 'Albert Flores',
-    time: 'Just now',
-    wager: 100,
-    multiplier: 10.0,
-    payout: 1000,
-  },
-  {
-    id: 'seed_2',
-    gameType: 'roulette',
-    gameTitle: 'Monte Carlo Wheel',
-    user: 'Annette Black',
-    time: '1m ago',
-    wager: 50,
-    multiplier: 36.0,
-    payout: 1800,
-  },
-  {
-    id: 'seed_3',
-    gameType: 'slots',
-    gameTitle: 'Velvet Brass Reels',
-    user: 'Guy Hawkins',
-    time: '2m ago',
-    wager: 150,
-    multiplier: 5.0,
-    payout: 750,
-  },
-  {
-    id: 'seed_4',
-    gameType: 'blackjack',
-    gameTitle: 'Parlor Blackjack',
-    user: 'Darlene Robertson',
-    time: '3m ago',
-    wager: 250,
-    multiplier: 2.5,
-    payout: 625,
-  },
-  {
-    id: 'seed_5',
-    gameType: 'videopoker',
-    gameTitle: 'Jacks or Better',
-    user: 'Devon Lane',
-    time: '5m ago',
-    wager: 200,
-    multiplier: 9.0,
-    payout: 1800,
-  },
-];
+const INITIAL_PARLOR_FEED: LiveFeedBetRow[] = [];
 
 export default function App() {
   const [uid, setUid] = useState<string>(() => getOrCreateLocalAnonymousUid());
@@ -269,12 +159,17 @@ export default function App() {
 
   const [profile, setProfile] = useState<PlayerProfileData>(() => {
     const initialUid = getOrCreateLocalAnonymousUid();
+    const savedNickname = localStorage.getItem(LOCAL_NICKNAME_KEY)?.trim();
     try {
       const cached = localStorage.getItem(LOCAL_PROFILE_STORAGE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed.chips === 'number') {
-          return { ...parsed, uid: initialUid };
+          return {
+            ...parsed,
+            uid: initialUid,
+            displayName: savedNickname || parsed.displayName || `Patron_${initialUid.slice(-4).toUpperCase()}`,
+          };
         }
       }
     } catch {
@@ -282,7 +177,7 @@ export default function App() {
     }
     return {
       uid: initialUid,
-      displayName: `Patron_${initialUid.slice(-4).toUpperCase()}`,
+      displayName: savedNickname || `Patron_${initialUid.slice(-4).toUpperCase()}`,
       chips: 5000,
       xp: 0,
       level: 1,
@@ -334,6 +229,13 @@ export default function App() {
   const [socialNotice, setSocialNotice] = useState<string | null>(null);
   const [muted, setMuted] = useState<boolean>(false);
   const [chatOpen, setChatOpen] = useState<boolean>(true);
+  const [nicknameModalOpen, setNicknameModalOpen] = useState<boolean>(() => {
+    const existingName = localStorage.getItem(LOCAL_NICKNAME_KEY);
+    return !existingName || existingName.trim().length < 2;
+  });
+  const [nicknameInput, setNicknameInput] = useState<string>(() => {
+    return localStorage.getItem(LOCAL_NICKNAME_KEY) || '';
+  });
 
   const wsRef = useRef<WebSocket | null>(null);
   const wsConnectedRef = useRef<boolean>(false);
@@ -407,12 +309,19 @@ export default function App() {
             const { type, payload } = JSON.parse(event.data);
 
             if (type === 'auth:ready') {
-              if (payload.profile) setProfile(payload.profile);
+              if (payload.profile) {
+                const savedName = localStorage.getItem(LOCAL_NICKNAME_KEY)?.trim();
+                const mergedProfile =
+                  savedName && savedName.length >= 2
+                    ? { ...payload.profile, displayName: savedName }
+                    : payload.profile;
+                setProfile(mergedProfile);
+              }
               if (payload.transactions) setTransactions(payload.transactions);
               if (payload.connections) setConnections(payload.connections);
               if (payload.onlinePlayers) setOnlinePlayers(payload.onlinePlayers);
               if (payload.rooms && payload.rooms.length > 0) setRooms(payload.rooms);
-              if (payload.chatHistory && payload.chatHistory.length > 0) {
+              if (payload.chatHistory) {
                 setChatMessages(payload.chatHistory);
               }
             } else if (type === 'presence:update') {
@@ -446,7 +355,7 @@ export default function App() {
               setActiveRoom(payload.room);
               setTableRole(payload.role || 'player');
               setActiveView('table');
-              if (payload.chatHistory && payload.chatHistory.length > 0) {
+              if (payload.chatHistory) {
                 setChatMessages(payload.chatHistory);
               }
               if (payload.profile) setProfile(payload.profile);
@@ -454,7 +363,7 @@ export default function App() {
             } else if (type === 'room:left') {
               setActiveRoom(null);
               setActiveView('lobby');
-              if (payload.chatHistory && payload.chatHistory.length > 0) {
+              if (payload.chatHistory) {
                 setChatMessages(payload.chatHistory);
               }
               if (payload.profile) setProfile(payload.profile);
@@ -956,26 +865,39 @@ export default function App() {
             {isPracticeMode ? 'Practice' : 'Live'}
           </button>
 
-          {/* Glowing Ring Avatar Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setVaultSection('vault');
-              setVaultModalOpen(true);
-            }}
-            className="w-8 h-8 rounded-full p-0.5 bg-gradient-to-tr from-amber-400 via-emerald-400 to-yellow-200 shadow-[0_0_12px_rgba(245,158,11,0.3)] cursor-pointer shrink-0 relative"
-            title={`${profile.displayName} · Level ${profile.level}`}
-          >
-            <img
-              src="/src/assets/images/avatar_vip_crest_1793833124304.jpg"
-              alt="VIP Avatar"
-              referrerPolicy="no-referrer"
-              className="w-full h-full rounded-full object-cover border border-stone-950"
-            />
-            <span className="absolute -bottom-0.5 -right-0.5 bg-amber-400 text-stone-950 font-mono-tabular text-[8px] font-extrabold px-1 rounded-full border border-stone-950">
-              {profile.level}
-            </span>
-          </button>
+          {/* Glowing Ring Avatar + Nickname Button */}
+          <div className="flex items-center gap-2 bg-[#050b08] border border-stone-800 rounded-2xl p-1 pr-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                setVaultSection('vault');
+                setVaultModalOpen(true);
+              }}
+              className="w-7 h-7 rounded-full p-0.5 bg-gradient-to-tr from-amber-400 via-emerald-400 to-yellow-200 shadow-[0_0_12px_rgba(245,158,11,0.3)] cursor-pointer shrink-0 relative"
+              title="Open Player Vault & Stats"
+            >
+              <img
+                src="/src/assets/images/avatar_vip_crest_1793833124304.jpg"
+                alt="VIP Avatar"
+                referrerPolicy="no-referrer"
+                className="w-full h-full rounded-full object-cover border border-stone-950"
+              />
+              <span className="absolute -bottom-0.5 -right-0.5 bg-amber-400 text-stone-950 font-mono-tabular text-[8px] font-extrabold px-1 rounded-full border border-stone-950">
+                {profile.level}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNicknameInput(profile.displayName.startsWith('Patron_') ? '' : profile.displayName);
+                setNicknameModalOpen(true);
+              }}
+              className="text-xs font-extrabold text-amber-200 hover:text-amber-300 truncate max-w-[110px] cursor-pointer"
+              title="Click to change your nickname"
+            >
+              {profile.displayName}
+            </button>
+          </div>
 
           {/* Daily Vault / Notifications Bell */}
           <button
@@ -1703,57 +1625,68 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody className="text-xs divide-y divide-stone-900">
-                        {displayedFeedRows.slice(0, 6).map((row) => (
-                          <tr
-                            key={row.id}
-                            className="bg-[#0b1611] hover:bg-[#0f1f18] transition-colors"
-                          >
-                            <td className="py-2 px-3 rounded-l-xl font-bold text-stone-200">
-                              <div className="flex items-center gap-2">
-                                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                <span>{row.gameTitle}</span>
-                              </div>
-                            </td>
-                            <td className="py-2 px-3 font-bold text-white">
-                              <div className="flex items-center gap-2">
-                                <span className="w-5 h-5 rounded-full bg-amber-400/20 border border-amber-400 text-[9px] flex items-center justify-center text-amber-200 font-extrabold">
-                                  {row.user.slice(0, 1).toUpperCase()}
-                                </span>
-                                <span>{row.user}</span>
-                              </div>
-                            </td>
-                            <td className="py-2 px-3 font-mono-tabular text-stone-400">
-                              {row.time}
-                            </td>
-                            <td className="py-2 px-3 font-mono-tabular font-bold text-white">
-                              <div className="flex items-center gap-1.5">
-                                <span className="w-3.5 h-3.5 rounded-full bg-amber-400 text-stone-950 text-[8px] flex items-center justify-center font-black">
-                                  ★
-                                </span>
-                                <span>{row.wager.toFixed(2)}</span>
-                              </div>
-                            </td>
-                            <td className="py-2 px-3 font-mono-tabular">
-                              <span
-                                className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold ${
-                                  row.multiplier >= 2
-                                    ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
-                                    : 'bg-stone-800 text-stone-300'
-                                }`}
-                              >
-                                {row.multiplier.toFixed(2)}x
-                              </span>
-                            </td>
-                            <td className="py-2 px-3 rounded-r-xl font-mono-tabular font-extrabold text-right text-amber-300">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <span className="w-3.5 h-3.5 rounded-full bg-amber-400 text-stone-950 text-[8px] flex items-center justify-center font-black">
-                                  ★
-                                </span>
-                                <span>{row.payout.toFixed(2)}</span>
-                              </div>
+                        {displayedFeedRows.length === 0 ? (
+                          <tr className="bg-[#0b1611]">
+                            <td
+                              colSpan={6}
+                              className="py-5 px-4 text-center text-stone-500 rounded-xl"
+                            >
+                              No live bets recorded yet — play any cabinet or 1–5 player table to see live results here.
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          displayedFeedRows.slice(0, 6).map((row) => (
+                            <tr
+                              key={row.id}
+                              className="bg-[#0b1611] hover:bg-[#0f1f18] transition-colors"
+                            >
+                              <td className="py-2 px-3 rounded-l-xl font-bold text-stone-200">
+                                <div className="flex items-center gap-2">
+                                  <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  <span>{row.gameTitle}</span>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 font-bold text-white">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-5 h-5 rounded-full bg-amber-400/20 border border-amber-400 text-[9px] flex items-center justify-center text-amber-200 font-extrabold">
+                                    {row.user.slice(0, 1).toUpperCase()}
+                                  </span>
+                                  <span>{row.user}</span>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 font-mono-tabular text-stone-400">
+                                {row.time}
+                              </td>
+                              <td className="py-2 px-3 font-mono-tabular font-bold text-white">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-3.5 h-3.5 rounded-full bg-amber-400 text-stone-950 text-[8px] flex items-center justify-center font-black">
+                                    ★
+                                  </span>
+                                  <span>{row.wager.toFixed(2)}</span>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 font-mono-tabular">
+                                <span
+                                  className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold ${
+                                    row.multiplier >= 2
+                                      ? 'bg-amber-400/15 text-amber-300 border border-amber-400/30'
+                                      : 'bg-stone-800 text-stone-300'
+                                  }`}
+                                >
+                                  {row.multiplier.toFixed(2)}x
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 rounded-r-xl font-mono-tabular font-extrabold text-right text-amber-300">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <span className="w-3.5 h-3.5 rounded-full bg-amber-400 text-stone-950 text-[8px] flex items-center justify-center font-black">
+                                    ★
+                                  </span>
+                                  <span>{row.payout.toFixed(2)}</span>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -2038,6 +1971,73 @@ export default function App() {
           socialNotice={socialNotice}
         />
       </div>
+
+      {/* Welcome / Nickname Prompt Modal on Join */}
+      {nicknameModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const cleaned = nicknameInput.trim().slice(0, 24);
+              if (cleaned.length < 2) return;
+              localStorage.setItem(LOCAL_NICKNAME_KEY, cleaned);
+              setProfile((prev) => ({ ...prev, displayName: cleaned }));
+              handleUpdateCustomization({ displayName: cleaned });
+              sendWs('auth:identify', { uid, displayName: cleaned });
+              setNicknameModalOpen(false);
+            }}
+            className="bg-[#0c1813] border-2 border-amber-400/50 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-[0_24px_60px_rgba(0,0,0,0.85)]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-300 via-amber-500 to-yellow-600 flex items-center justify-center text-stone-950 shadow-lg shrink-0">
+                <Flame className="w-6 h-6 fill-stone-950" />
+              </div>
+              <div>
+                <div className="text-[10px] font-extrabold uppercase tracking-widest text-amber-300">
+                  1–5 PLAYER SOCIAL CLUB
+                </div>
+                <h2 className="font-display text-xl font-bold text-white">
+                  Choose Your Nickname
+                </h2>
+              </div>
+            </div>
+
+            <p className="text-xs text-stone-300 leading-relaxed">
+              Enter the nickname your friends and table-mates will see in the 1–5 player rooms and live chat.
+            </p>
+
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-amber-300 mb-1.5">
+                Player Nickname
+              </label>
+              <input
+                type="text"
+                autoFocus
+                required
+                minLength={2}
+                maxLength={24}
+                value={nicknameInput}
+                onChange={(e) => setNicknameInput(e.target.value)}
+                placeholder="e.g. LuckyAce, HighRoller..."
+                className="w-full bg-[#060d0a] border-2 border-stone-700 focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white placeholder-stone-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] text-emerald-300 font-semibold">
+                +5,000 Starting Play Chips Included
+              </span>
+              <button
+                type="submit"
+                disabled={nicknameInput.trim().length < 2}
+                className="btn-arcade-gold px-5 py-2.5 rounded-xl font-extrabold text-xs uppercase tracking-wider cursor-pointer disabled:opacity-40"
+              >
+                Enter Casino →
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Private Room Passcode Prompt Modal */}
       {passwordPromptRoom && (
