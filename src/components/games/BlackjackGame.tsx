@@ -15,6 +15,7 @@ interface BlackjackGameProps {
     multiplier: number;
     summary: string;
   }) => void;
+  onEmergencyBailout?: () => void;
 }
 
 type Suit = '♠' | '♥' | '♦' | '♣';
@@ -66,6 +67,7 @@ export const BlackjackGame: React.FC<BlackjackGameProps> = ({
   isSpectator,
   minBet,
   onCompleteRound,
+  onEmergencyBailout,
 }) => {
   const [wager, setWager] = useState<number>(Math.max(50, minBet));
   const [activeWager, setActiveWager] = useState<number>(0);
@@ -236,9 +238,9 @@ export const BlackjackGame: React.FC<BlackjackGameProps> = ({
       : calculateHandTotal(dealerHand);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
       {/* Left Arcade Control Console */}
-      <div className="lg:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+      <div className="xl:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
         <div className="space-y-5">
           <ChipRack
             wager={wager}
@@ -246,6 +248,7 @@ export const BlackjackGame: React.FC<BlackjackGameProps> = ({
             minBet={minBet}
             disabled={phase === 'player-turn' || isSpectator}
             onChangeWager={setWager}
+            onEmergencyBailout={onEmergencyBailout}
           />
 
           {phase !== 'player-turn' ? (
@@ -300,7 +303,7 @@ export const BlackjackGame: React.FC<BlackjackGameProps> = ({
       </div>
 
       {/* Right Blackjack Felt Table with Wood Rail */}
-      <div className="lg:col-span-8 casino-table-rail casino-felt-surface rounded-2xl p-6 flex flex-col justify-between min-h-[410px] relative overflow-hidden">
+      <div className="xl:col-span-8 casino-table-rail casino-felt-surface rounded-2xl p-6 flex flex-col justify-between min-h-[410px] relative overflow-hidden">
         {/* Decorative Card Shoe on Top Right */}
         <div className="hidden sm:flex absolute top-4 right-5 w-16 h-22 rounded-lg bg-amber-950/90 border-2 border-amber-500/50 flex-col items-center justify-center shadow-lg">
           <span className="text-[10px] text-amber-300 font-mono-tabular uppercase">6-Deck</span>

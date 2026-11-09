@@ -75,6 +75,7 @@ import {
   Download,
   HardDrive,
   Award,
+  Zap,
 } from 'lucide-react';
 
 const LOCAL_UID_KEY = 'vb_parlor_anon_uid_v1';
@@ -188,6 +189,177 @@ interface LiveFeedBetRow {
 
 const INITIAL_PARLOR_FEED: LiveFeedBetRow[] = [];
 
+const CLUB_PATRONS_FALLBACK: PlayerProfileData[] = [
+  {
+    uid: 'patron_eleanor',
+    displayName: 'Lady Eleanor Vance',
+    chips: 125000,
+    xp: 8500,
+    level: 14,
+    chipTheme: 'obsidian-gold',
+    tableTheme: 'royal-burgundy',
+    gamesPlayed: 342,
+    totalWon: 412000,
+    biggestWin: 85000,
+    dailyStreak: 12,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: 'Blackjack',
+    currentRoomId: 'room_blackjack_main',
+    unlockedAchievements: ['high_roller', 'blackjack_streak'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_sterling',
+    displayName: 'Duke Sterling',
+    chips: 280000,
+    xp: 14200,
+    level: 21,
+    chipTheme: 'cyber-platinum',
+    tableTheme: 'midnight-velvet',
+    gamesPlayed: 512,
+    totalWon: 980000,
+    biggestWin: 210000,
+    dailyStreak: 24,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: "Texas Hold'em",
+    currentRoomId: 'room_holdem_main',
+    unlockedAchievements: ['diamond_vip', 'poker_face'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_camille',
+    displayName: 'Duchess Camille',
+    chips: 94000,
+    xp: 6200,
+    level: 9,
+    chipTheme: 'emerald-royale',
+    tableTheme: 'emerald-felt',
+    gamesPlayed: 184,
+    totalWon: 230000,
+    biggestWin: 45000,
+    dailyStreak: 8,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: 'Roulette',
+    currentRoomId: 'room_roulette_main',
+    unlockedAchievements: ['roulette_master'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_von_cash',
+    displayName: 'Baron Von Cash',
+    chips: 510000,
+    xp: 22000,
+    level: 30,
+    chipTheme: 'cyber-platinum',
+    tableTheme: 'mahogany-club',
+    gamesPlayed: 890,
+    totalWon: 1950000,
+    biggestWin: 350000,
+    dailyStreak: 35,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: 'Plinko',
+    currentRoomId: 'room_plinko_main',
+    unlockedAchievements: ['plinko_titan', 'billionaire_club'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_vesper',
+    displayName: 'Countess Vesper',
+    chips: 78000,
+    xp: 4900,
+    level: 8,
+    chipTheme: 'crimson-velvet',
+    tableTheme: 'royal-burgundy',
+    gamesPlayed: 120,
+    totalWon: 1650000,
+    biggestWin: 42000,
+    dailyStreak: 5,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: 'Crown Slots',
+    currentRoomId: 'room_slots_main',
+    unlockedAchievements: ['slot_queen'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_jax',
+    displayName: 'High-Roller Jax',
+    chips: 340000,
+    xp: 18400,
+    level: 25,
+    chipTheme: 'obsidian-gold',
+    tableTheme: 'midnight-velvet',
+    gamesPlayed: 670,
+    totalWon: 1200000,
+    biggestWin: 180000,
+    dailyStreak: 19,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: 'Dice Pit',
+    currentRoomId: 'room_dice_main',
+    unlockedAchievements: ['craps_master'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_viktor',
+    displayName: 'Viktor Sterling',
+    chips: 62000,
+    xp: 3800,
+    level: 6,
+    chipTheme: 'classic-brass',
+    tableTheme: 'emerald-felt',
+    gamesPlayed: 95,
+    totalWon: 110000,
+    biggestWin: 28000,
+    dailyStreak: 4,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: 'Three Card Poker',
+    currentRoomId: 'room_threecard_main',
+    unlockedAchievements: ['pair_plus_king'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_marcus',
+    displayName: 'Marcus Finch',
+    chips: 45000,
+    xp: 2900,
+    level: 5,
+    chipTheme: 'classic-brass',
+    tableTheme: 'mahogany-club',
+    gamesPlayed: 76,
+    totalWon: 85000,
+    biggestWin: 19000,
+    dailyStreak: 3,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: 'Video Poker',
+    currentRoomId: 'room_poker_main',
+    unlockedAchievements: ['royal_flush_hunter'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
 export default function App() {
   const [uid, setUid] = useState<string>(() => getOrCreateLocalAnonymousUid());
   const [firebaseAuthStatus, setFirebaseAuthStatus] = useState<
@@ -237,7 +409,7 @@ export default function App() {
 
   const [transactions, setTransactions] = useState<ChipTransactionItem[]>([]);
   const [connections, setConnections] = useState<PlayerConnectionItem[]>([]);
-  const [onlinePlayers, setOnlinePlayers] = useState<PlayerProfileData[]>([]);
+  const [onlinePlayers, setOnlinePlayers] = useState<PlayerProfileData[]>(CLUB_PATRONS_FALLBACK);
   const [rooms, setRooms] = useState<MultiplayerRoom[]>(DEFAULT_ROOMS);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(DEFAULT_CHAT_MESSAGES);
   const [reactions, setReactions] = useState<EmojiReactionEvent[]>([]);
@@ -413,8 +585,10 @@ export default function App() {
               }
             } else if (type === 'profile:synced') {
               if (payload.profile) {
-                setProfile(payload.profile);
-                syncFirestoreGameplayStats(payload.profile.uid, payload.profile).catch(() => {});
+                const effectiveChips = Math.max(profileRef.current.chips, payload.profile.chips);
+                const updated = { ...payload.profile, chips: effectiveChips };
+                setProfile(updated);
+                syncFirestoreGameplayStats(updated.uid, updated).catch(() => {});
               }
               if (payload.transactions) setTransactions(payload.transactions);
               if (payload.connections) setConnections(payload.connections);
@@ -435,7 +609,12 @@ export default function App() {
               if (payload.chatHistory) {
                 setChatMessages(payload.chatHistory);
               }
-              if (payload.profile) setProfile(payload.profile);
+              if (payload.profile) {
+                setProfile((curr) => ({
+                  ...payload.profile,
+                  chips: Math.max(curr.chips, payload.profile.chips),
+                }));
+              }
               if (payload.connections) setConnections(payload.connections);
             } else if (type === 'room:left') {
               setActiveRoom(null);
@@ -443,7 +622,12 @@ export default function App() {
               if (payload.chatHistory) {
                 setChatMessages(payload.chatHistory);
               }
-              if (payload.profile) setProfile(payload.profile);
+              if (payload.profile) {
+                setProfile((curr) => ({
+                  ...payload.profile,
+                  chips: Math.max(curr.chips, payload.profile.chips),
+                }));
+              }
             } else if (type === 'room:activity') {
               if (payload.event) {
                 const ev = payload.event;
@@ -551,6 +735,33 @@ export default function App() {
     []
   );
 
+  const handleEmergencyBailout = useCallback(() => {
+    sound.playWinChime(true);
+    const grant = 5000;
+    const newChips = profileRef.current.chips + grant;
+    const newTx: ChipTransactionItem = {
+      id: `bailout_${Date.now()}`,
+      uid: profileRef.current.uid,
+      type: 'allowance',
+      game: 'Emergency Bailout',
+      amount: grant,
+      balanceAfter: newChips,
+      summary: 'Parlor Emergency Bailout Relief Grant (+5,000)',
+      createdAt: new Date().toISOString(),
+    };
+    const updated: PlayerProfileData = {
+      ...profileRef.current,
+      chips: newChips,
+      updatedAt: new Date().toISOString(),
+    };
+    setProfile(updated);
+    setTransactions((prev) => [newTx, ...prev]);
+    showTempNotice('⚡ Parlor Emergency Bailout approved! +5,000 chips credited to your bankroll.');
+    sendWs('economy:emergency_bailout', { grantAmount: grant });
+    recordFirestoreTransaction(updated.uid, newTx).catch(() => {});
+    syncFirestoreGameplayStats(updated.uid, updated).catch(() => {});
+  }, [sendWs, showTempNotice]);
+
   const handleCompleteRound = useCallback(
     (result: {
       wager: number;
@@ -562,34 +773,8 @@ export default function App() {
       const currentGameType: GameType = activeRoom ? activeRoom.gameType : 'plinko';
       if (isPracticeMode) {
         setPracticeChips((prev) => Math.max(0, prev - result.wager + result.payout));
-      }
-
-      setLiveFeedRows((prev) => [
-        {
-          id: `local_${Date.now()}`,
-          gameType: currentGameType,
-          gameTitle: GAME_CATALOG[currentGameType]?.title || 'Parlor Table',
-          user: profileRef.current.displayName,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          wager: result.wager,
-          multiplier: result.multiplier,
-          payout: result.payout,
-        },
-        ...prev.slice(0, 14),
-      ]);
-
-      const sent = sendWs('game:round_complete', {
-        isPractice: isPracticeMode,
-        gameType: currentGameType,
-        wager: result.wager,
-        payout: result.payout,
-        multiplier: result.multiplier,
-        summary: result.summary,
-        extraVisual: result.extraVisual,
-      });
-
-      // Fallback when running on static GitHub Pages without WebSocket backend
-      if (!sent && !isPracticeMode) {
+      } else {
+        // ALWAYS calculate and update local chips immediately for snappy, reliable money gain
         const netDelta = result.payout - result.wager;
         const newChips = Math.max(0, profileRef.current.chips + netDelta);
         const newXp = profileRef.current.xp + Math.max(10, Math.round(result.wager * 0.25));
@@ -609,6 +794,44 @@ export default function App() {
         };
         setProfile(updatedProfile);
         syncFirestoreGameplayStats(updatedProfile.uid, updatedProfile).catch(() => {});
+
+        // Broadcast to server with clientChips to synchronize
+        sendWs('game:round_complete', {
+          isPractice: false,
+          gameType: currentGameType,
+          wager: result.wager,
+          payout: result.payout,
+          multiplier: result.multiplier,
+          summary: result.summary,
+          extraVisual: result.extraVisual,
+          clientChips: newChips,
+        });
+      }
+
+      setLiveFeedRows((prev) => [
+        {
+          id: `local_${Date.now()}`,
+          gameType: currentGameType,
+          gameTitle: GAME_CATALOG[currentGameType]?.title || 'Parlor Table',
+          user: profileRef.current.displayName,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          wager: result.wager,
+          multiplier: result.multiplier,
+          payout: result.payout,
+        },
+        ...prev.slice(0, 14),
+      ]);
+
+      if (isPracticeMode) {
+        sendWs('game:round_complete', {
+          isPractice: true,
+          gameType: currentGameType,
+          wager: result.wager,
+          payout: result.payout,
+          multiplier: result.multiplier,
+          summary: result.summary,
+          extraVisual: result.extraVisual,
+        });
       }
     },
     [activeRoom, isPracticeMode, sendWs]
@@ -776,9 +999,9 @@ export default function App() {
   return (
     <div className="h-screen overflow-hidden bg-[#060d0a] text-[#f4f1ea] flex flex-col">
       {/* Top Bar matching reference layout in Velvet & Brass theme */}
-      <header className="h-14 px-4 lg:px-6 border-b border-amber-500/20 bg-[#08120e] flex items-center justify-between gap-3 shrink-0">
+      <header className="h-14 px-3 sm:px-4 lg:px-6 border-b border-amber-500/20 bg-[#08120e] flex items-center justify-between gap-2 lg:gap-3 shrink-0 overflow-x-auto sm:overflow-visible no-scrollbar">
         {/* Left: Brand Emblem + Wordmark + Nav Links */}
-        <div className="flex items-center gap-5 min-w-0">
+        <div className="flex items-center gap-3 xl:gap-5 min-w-0 shrink-0">
           <a
             href="#lobby"
             onClick={(e) => {
@@ -791,15 +1014,15 @@ export default function App() {
             }}
             className="flex items-center gap-2 shrink-0 group"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-300 via-amber-500 to-yellow-600 flex items-center justify-center text-stone-950 shadow-[0_0_15px_rgba(245,158,11,0.35)]">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-300 via-amber-500 to-yellow-600 flex items-center justify-center text-stone-950 shadow-[0_0_15px_rgba(245,158,11,0.35)] shrink-0">
               <Flame className="w-4 h-4 fill-stone-950" />
             </div>
-            <span className="font-display text-lg font-bold tracking-wide text-white group-hover:text-amber-300 transition-colors">
+            <span className="font-display text-lg font-bold tracking-wide text-white group-hover:text-amber-300 transition-colors hidden sm:inline">
               velvet<span className="text-amber-400">.gg</span>
             </span>
           </a>
 
-          <nav className="hidden xl:flex items-center gap-5 text-xs font-semibold text-stone-400">
+          <nav className="hidden 2xl:flex items-center gap-4 text-xs font-semibold text-stone-400">
             <button
               type="button"
               onClick={() => {
@@ -860,7 +1083,7 @@ export default function App() {
         </div>
 
         {/* Center: Segmented [ ♠ Games | 🎲 1-5 Tables ] Pill Switcher */}
-        <div className="hidden md:flex items-center p-1 rounded-2xl bg-[#050b08] border border-amber-500/20">
+        <div className="hidden lg:flex items-center p-1 rounded-2xl bg-[#050b08] border border-amber-500/20 shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -871,7 +1094,7 @@ export default function App() {
               setActiveView('lobby');
               setLobbyCenterTab('games');
             }}
-            className={`px-3.5 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
               activeView === 'lobby' && lobbyCenterTab === 'games'
                 ? 'btn-arcade-gold shadow-md'
                 : 'text-stone-400 hover:text-stone-200'
@@ -890,7 +1113,7 @@ export default function App() {
               setActiveView('lobby');
               setLobbyCenterTab('matches');
             }}
-            className={`px-3.5 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
               lobbyCenterTab === 'matches'
                 ? 'btn-arcade-gold shadow-md'
                 : 'text-stone-400 hover:text-stone-200'
@@ -901,13 +1124,26 @@ export default function App() {
           </button>
         </div>
 
-        {/* Right: Unified Balance Pill + (+1,500 Free Deposit Button) + Avatar + Controls */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right: Unified Balance Pill + (+1,500 Free / Broke Bailout) + Avatar + Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Broke Recovery Button if balance is depleted */}
+          {!isPracticeMode && effectiveBalance < 25 && (
+            <button
+              type="button"
+              onClick={handleEmergencyBailout}
+              className="px-2.5 py-1 rounded-xl text-[11px] font-extrabold flex items-center gap-1 cursor-pointer bg-gradient-to-r from-emerald-500 to-amber-500 hover:from-emerald-400 hover:to-amber-400 text-stone-950 shadow-md animate-pulse whitespace-nowrap shrink-0"
+              title="Broke? Request +5,000 Parlor Bailout Relief"
+            >
+              <Zap className="w-3.5 h-3.5 fill-stone-950" />
+              <span>Broke? +5K</span>
+            </button>
+          )}
+
           {/* Unified Bankroll & Free Chips Pill */}
-          <div className="flex items-center bg-[#050b08] border border-amber-500/30 rounded-2xl p-1 pl-2.5 gap-2">
+          <div className="flex items-center bg-[#050b08] border border-amber-500/30 rounded-2xl p-1 pl-2 sm:pl-2.5 gap-1.5 sm:gap-2 shrink-0">
             <div className="flex items-center gap-1.5">
               <div
-                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-stone-950 shadow-inner"
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-stone-950 shadow-inner shrink-0"
                 style={{ backgroundColor: currentChipTheme.primaryHex }}
               >
                 ★
@@ -924,7 +1160,7 @@ export default function App() {
                   sound.playChipClick();
                   setPracticeChips(10000);
                 }}
-                className="btn-arcade-emerald px-2.5 py-1 rounded-xl text-[11px] font-extrabold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                className="btn-arcade-emerald px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold flex items-center gap-1 cursor-pointer whitespace-nowrap"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset 10K</span>
@@ -937,10 +1173,11 @@ export default function App() {
                   setPuzzleModalOpen(true);
                 }}
                 title="Solve 10-Second Brass Vault Puzzle for +1,500 Free Chips"
-                className="btn-arcade-emerald px-2.5 py-1 rounded-xl text-[11px] font-extrabold flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-sm"
+                className="btn-arcade-emerald px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] font-extrabold flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                <span>1,500 Free</span>
+                <span className="hidden sm:inline">1,500 Free</span>
+                <span className="sm:hidden">+1.5K</span>
               </button>
             )}
           </div>
@@ -952,7 +1189,7 @@ export default function App() {
               sound.playChipClick();
               setIsPracticeMode((prev) => !prev);
             }}
-            className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[10px] font-extrabold uppercase tracking-wider cursor-pointer transition-colors ${
+            className={`hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[10px] font-extrabold uppercase tracking-wider cursor-pointer transition-colors shrink-0 ${
               isPracticeMode
                 ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
                 : 'bg-[#0c1a14] border-stone-800 text-stone-400 hover:text-amber-300'
@@ -963,7 +1200,7 @@ export default function App() {
           </button>
 
           {/* Glowing Ring Avatar + Nickname Button */}
-          <div className="flex items-center gap-2 bg-[#050b08] border border-stone-800 rounded-2xl p-1 pr-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-[#050b08] border border-stone-800 rounded-2xl p-1 pr-2 sm:pr-2.5 shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -989,7 +1226,7 @@ export default function App() {
                 setNicknameInput(profile.displayName.startsWith('Patron_') ? '' : profile.displayName);
                 setNicknameModalOpen(true);
               }}
-              className="text-xs font-extrabold text-amber-200 hover:text-amber-300 truncate max-w-[110px] cursor-pointer"
+              className="text-xs font-extrabold text-amber-200 hover:text-amber-300 truncate max-w-[70px] sm:max-w-[100px] cursor-pointer"
               title="Click to change your nickname"
             >
               {profile.displayName}
@@ -1003,7 +1240,7 @@ export default function App() {
               setVaultSection('vault');
               setVaultModalOpen(true);
             }}
-            className="w-8 h-8 rounded-xl bg-[#0c1a14] border border-stone-800 hover:border-amber-400/40 flex items-center justify-center text-stone-300 hover:text-amber-300 cursor-pointer relative"
+            className="w-8 h-8 rounded-xl bg-[#0c1a14] border border-stone-800 hover:border-amber-400/40 flex items-center justify-center text-stone-300 hover:text-amber-300 cursor-pointer relative shrink-0"
             title="Daily Rewards & Vault"
           >
             <Bell className="w-4 h-4" />
@@ -1014,25 +1251,29 @@ export default function App() {
           <button
             type="button"
             onClick={toggleMute}
-            className="w-8 h-8 rounded-xl bg-[#0c1a14] border border-stone-800 hover:border-amber-400/40 flex items-center justify-center text-amber-300 cursor-pointer"
+            className="w-8 h-8 rounded-xl bg-[#0c1a14] border border-stone-800 hover:border-amber-400/40 flex items-center justify-center text-amber-300 cursor-pointer shrink-0"
             title={muted ? 'Unmute Audio' : 'Mute Audio'}
           >
             {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
 
-          {/* Toggle Online Chat Sidebar Button */}
+          {/* Online Patrons & Chat Toggle Button */}
           <button
             type="button"
             onClick={() => setChatOpen((prev) => !prev)}
-            className={`px-2.5 h-8 rounded-xl border flex items-center gap-1.5 text-xs font-extrabold transition-colors cursor-pointer ${
+            className={`px-2 sm:px-2.5 h-8 rounded-xl border flex items-center gap-1 sm:gap-1.5 text-xs font-extrabold transition-colors cursor-pointer shrink-0 ${
               chatOpen
-                ? 'bg-amber-400/20 border-amber-400 text-amber-300'
+                ? 'bg-amber-400/20 border-amber-400 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
                 : 'bg-[#0c1a14] border-stone-800 text-stone-300 hover:border-amber-400/40 hover:text-amber-300'
             }`}
-            title={chatOpen ? 'Close Chat Sidebar' : 'Open Chat Sidebar'}
+            title={chatOpen ? 'Close Social Sidebar' : 'View Online Patrons & Chat'}
           >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{chatOpen ? 'Close Chat' : 'Chat'}</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span className="font-mono-tabular font-extrabold text-emerald-300">
+              {Math.max(onlinePlayers.length, 8)}
+            </span>
+            <span className="hidden sm:inline font-semibold text-stone-300">Patrons</span>
           </button>
         </div>
       </header>
@@ -2058,6 +2299,7 @@ export default function App() {
                       minBet={activeRoom.minBet}
                       recentActivity={activeRoom.recentActivity}
                       onCompleteRound={handleCompleteRound}
+                      onEmergencyBailout={handleEmergencyBailout}
                     />
                   )}
                   {activeRoom.gameType === 'blackjack' && (
@@ -2067,6 +2309,7 @@ export default function App() {
                       isSpectator={tableRole === 'spectator'}
                       minBet={activeRoom.minBet}
                       onCompleteRound={handleCompleteRound}
+                      onEmergencyBailout={handleEmergencyBailout}
                     />
                   )}
                   {activeRoom.gameType === 'roulette' && (
@@ -2076,6 +2319,7 @@ export default function App() {
                       isSpectator={tableRole === 'spectator'}
                       minBet={activeRoom.minBet}
                       onCompleteRound={handleCompleteRound}
+                      onEmergencyBailout={handleEmergencyBailout}
                     />
                   )}
                   {activeRoom.gameType === 'slots' && (
@@ -2085,6 +2329,7 @@ export default function App() {
                       isSpectator={tableRole === 'spectator'}
                       minBet={activeRoom.minBet}
                       onCompleteRound={handleCompleteRound}
+                      onEmergencyBailout={handleEmergencyBailout}
                     />
                   )}
                   {activeRoom.gameType === 'videopoker' && (
@@ -2094,6 +2339,7 @@ export default function App() {
                       isSpectator={tableRole === 'spectator'}
                       minBet={activeRoom.minBet}
                       onCompleteRound={handleCompleteRound}
+                      onEmergencyBailout={handleEmergencyBailout}
                     />
                   )}
                   {activeRoom.gameType === 'dice' && (
@@ -2103,6 +2349,7 @@ export default function App() {
                       isSpectator={tableRole === 'spectator'}
                       minBet={activeRoom.minBet}
                       onCompleteRound={handleCompleteRound}
+                      onEmergencyBailout={handleEmergencyBailout}
                     />
                   )}
                   {activeRoom.gameType === 'holdem' && (
@@ -2112,6 +2359,7 @@ export default function App() {
                       isSpectator={tableRole === 'spectator'}
                       minBet={activeRoom.minBet}
                       onCompleteRound={handleCompleteRound}
+                      onEmergencyBailout={handleEmergencyBailout}
                     />
                   )}
                   {activeRoom.gameType === 'threecardpoker' && (
@@ -2121,6 +2369,7 @@ export default function App() {
                       isSpectator={tableRole === 'spectator'}
                       minBet={activeRoom.minBet}
                       onCompleteRound={handleCompleteRound}
+                      onEmergencyBailout={handleEmergencyBailout}
                     />
                   )}
                 </div>

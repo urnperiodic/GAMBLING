@@ -11,9 +11,12 @@ import {
   Play,
   Users,
   MessageSquare,
-  ChevronDown,
   Smile,
   X,
+  UserCheck,
+  Crown,
+  Gamepad2,
+  Sparkles,
 } from 'lucide-react';
 
 interface SocialSidebarProps {
@@ -36,29 +39,6 @@ interface SocialSidebarProps {
 
 const REACTION_EMOJIS = ['🔥', '💎', '🎉', '🍀', '👑', '😱', '🤝', '🚀'];
 
-const AVATAR_RING_COLORS = [
-  'border-amber-400 bg-amber-500/20 text-amber-200',
-  'border-emerald-400 bg-emerald-500/20 text-emerald-200',
-  'border-rose-400 bg-rose-500/20 text-rose-200',
-  'border-teal-400 bg-teal-500/20 text-teal-200',
-  'border-yellow-400 bg-yellow-500/20 text-yellow-200',
-];
-
-const BADGE_COLORS = [
-  'bg-amber-500/25 text-amber-300 border-amber-400/40',
-  'bg-emerald-500/25 text-emerald-300 border-emerald-400/40',
-  'bg-rose-500/25 text-rose-300 border-rose-400/40',
-  'bg-yellow-500/25 text-yellow-200 border-yellow-400/40',
-];
-
-function hashIndex(str: string, mod: number): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = (h * 31 + str.charCodeAt(i)) >>> 0;
-  }
-  return h % mod;
-}
-
 export const SocialSidebar: React.FC<SocialSidebarProps> = ({
   isOpen,
   onClose,
@@ -76,8 +56,9 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
   onJoinRoom,
   socialNotice,
 }) => {
-  const [directoryTab, setDirectoryTab] = useState<'party' | 'online' | 'friends' | 'recent'>('party');
-  const [directoryOpen, setDirectoryOpen] = useState<boolean>(false);
+  // Main view toggle: 'online' or 'chat'
+  const [sidebarView, setSidebarView] = useState<'online' | 'chat'>('online');
+  const [onlineSubTab, setOnlineSubTab] = useState<'all' | 'table' | 'friends'>('all');
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
   const [chatInput, setChatInput] = useState('');
   const [friendQuery, setFriendQuery] = useState('');
@@ -85,16 +66,15 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   const friendsList = connections.filter((c) => c.relationType === 'friend');
-  const recentList = connections.filter((c) => c.relationType === 'recent');
   const seatedPlayers = activeRoom
     ? activeRoom.participants.filter((p) => p.role === 'player')
     : [];
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && sidebarView === 'chat') {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [chatMessages.length, isOpen]);
+  }, [chatMessages.length, isOpen, sidebarView]);
 
   if (!isOpen) {
     return null;
@@ -114,494 +94,409 @@ export const SocialSidebar: React.FC<SocialSidebarProps> = ({
     setFriendQuery('');
   };
 
+  // Ensure current user is included in the online count if not already
+  const displayedOnline = onlinePlayers.length > 0 ? onlinePlayers : [currentUser];
+
   return (
-    <aside className="w-72 sm:w-80 xl:w-86 h-full shrink-0 bg-[#07100c] border-l border-amber-500/20 flex flex-col overflow-hidden select-none">
-      {/* Top Header matching reference "Online Chat" bar with Close button */}
-      <div className="px-3.5 py-3 border-b border-amber-500/15 bg-[#09140f] flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-amber-400/15 border border-amber-400/35 flex items-center justify-center text-amber-300 shrink-0">
-            <MessageSquare className="w-3.5 h-3.5" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-xs font-extrabold text-white tracking-wide block leading-none truncate">
-              {activeRoom ? activeRoom.name : 'Online Chat'}
-            </span>
-            <span className="text-[10px] text-stone-400 font-medium truncate block mt-0.5">
-              {activeRoom ? `${seatedPlayers.length}/5 Seated` : '1–5 Player Club Sidebar'}
-            </span>
-          </div>
-        </div>
+    <>
+      {/* Semi-transparent mobile / compact viewport backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 xl:hidden"
+        aria-hidden="true"
+      />
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Online / Party Count Indicator */}
-          <button
-            type="button"
-            onClick={() => setDirectoryOpen((prev) => !prev)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0d1c15] border border-emerald-500/30 hover:border-amber-400/50 transition-colors cursor-pointer"
-            title="Toggle 1–5 Player Party & Friends Drawer"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-            <span className="font-mono-tabular text-xs font-bold text-stone-100">
-              {Math.max(1, onlinePlayers.length)}
-            </span>
-            <ChevronDown className="w-3 h-3 text-amber-300" />
-          </button>
+      <aside className="fixed xl:static top-0 right-0 bottom-0 z-50 w-80 sm:w-86 xl:w-84 h-full shrink-0 bg-[#07100c] border-l border-amber-500/20 flex flex-col overflow-hidden select-none shadow-2xl">
+        {/* Top Header: Title + Online Count Indicator + Close */}
+        <div className="px-3.5 py-3 border-b border-amber-500/15 bg-[#09140f] flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-amber-400/15 border border-amber-400/35 flex items-center justify-center text-amber-300 shrink-0">
+              <Users className="w-3.5 h-3.5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                <span className="text-xs font-black text-white tracking-wide truncate">
+                  {displayedOnline.length} Patrons Online
+                </span>
+              </div>
+              <span className="text-[10px] text-amber-300/80 font-medium truncate block">
+                {activeRoom ? `${activeRoom.name} (${seatedPlayers.length}/5)` : 'Social Club Parlor'}
+              </span>
+            </div>
+          </div>
 
-          {/* Close Chat Button */}
           <button
             type="button"
             onClick={onClose}
-            className="px-2 py-1 rounded-lg bg-[#0d1c15] border border-stone-800 hover:border-rose-400/50 hover:bg-rose-500/15 flex items-center gap-1 text-stone-300 hover:text-rose-300 text-[11px] font-bold transition-colors cursor-pointer"
-            title="Close Chat Sidebar"
+            className="px-2.5 py-1 rounded-lg bg-[#0d1c15] border border-stone-800 hover:border-rose-400/50 hover:bg-rose-500/15 flex items-center gap-1 text-stone-300 hover:text-rose-300 text-[11px] font-bold transition-colors cursor-pointer"
+            title="Close Sidebar"
           >
             <X className="w-3.5 h-3.5" />
             <span>Close</span>
           </button>
         </div>
-      </div>
 
-      {/* Collapsible 1–5 Player Party, Online, Friends & Recent Drawer */}
-      {directoryOpen && (
-        <div className="border-b border-amber-500/20 bg-[#08120e] shrink-0">
-          <div className="px-3 pt-2.5 pb-1.5">
-            <div className="grid grid-cols-4 gap-1 p-0.5 bg-[#050b08] rounded-xl border border-stone-800">
-              {[
-                { id: 'party' as const, label: `Seats (${seatedPlayers.length || 1}/5)` },
-                { id: 'online' as const, label: `Online (${Math.max(1, onlinePlayers.length)})` },
-                { id: 'friends' as const, label: `Friends (${friendsList.length})` },
-                { id: 'recent' as const, label: 'Recent' },
-              ].map((t) => (
+        {/* Primary Segmented Mode Switcher: [ 🟢 Online Patrons ] | [ 💬 Parlor Chat ] */}
+        <div className="p-2 border-b border-amber-500/15 bg-[#050b08] shrink-0">
+          <div className="grid grid-cols-2 gap-1 p-0.5 bg-[#0a1610] rounded-xl border border-stone-800">
+            <button
+              type="button"
+              onClick={() => setSidebarView('online')}
+              className={`py-1.5 px-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                sidebarView === 'online'
+                  ? 'bg-amber-400 text-stone-950 shadow-md'
+                  : 'text-stone-400 hover:text-white'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Patrons ({displayedOnline.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSidebarView('chat')}
+              className={`py-1.5 px-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                sidebarView === 'chat'
+                  ? 'bg-amber-400 text-stone-950 shadow-md'
+                  : 'text-stone-400 hover:text-white'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Parlor Chat</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Temporary Notice Banner */}
+        {socialNotice && (
+          <div className="bg-amber-400 text-stone-950 text-xs px-3 py-1.5 font-bold flex items-center justify-between shrink-0 shadow">
+            <span>{socialNotice}</span>
+          </div>
+        )}
+
+        {/* VIEW 1: ONLINE PATRONS DIRECTORY */}
+        {sidebarView === 'online' && (
+          <div className="flex-1 flex flex-col min-h-0 bg-[#07110d]">
+            {/* Sub-filter tabs */}
+            <div className="px-3 pt-2 pb-1.5 flex items-center gap-1 border-b border-stone-800/80 shrink-0">
+              <button
+                type="button"
+                onClick={() => setOnlineSubTab('all')}
+                className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold transition-colors cursor-pointer ${
+                  onlineSubTab === 'all'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                All Online ({displayedOnline.length})
+              </button>
+              {activeRoom && (
                 <button
-                  key={t.id}
                   type="button"
-                  onClick={() => setDirectoryTab(t.id)}
-                  className={`py-1 px-1 rounded-lg text-[10px] font-extrabold transition-colors cursor-pointer whitespace-nowrap truncate ${
-                    directoryTab === t.id
-                      ? 'bg-amber-400 text-stone-950'
+                  onClick={() => setOnlineSubTab('table')}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold transition-colors cursor-pointer ${
+                    onlineSubTab === 'table'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
                       : 'text-stone-400 hover:text-stone-200'
                   }`}
                 >
-                  {t.label}
+                  Table Seats ({seatedPlayers.length}/5)
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setOnlineSubTab('friends')}
+                className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold transition-colors cursor-pointer ${
+                  onlineSubTab === 'friends'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                Friends ({friendsList.length})
+              </button>
+            </div>
+
+            {/* Scrollable list of patrons */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {onlineSubTab === 'table' && activeRoom ? (
+                <div className="space-y-1.5">
+                  <div className="text-[11px] text-amber-300/80 font-bold mb-2">
+                    5-Seat VIP Table ({activeRoom.name})
+                  </div>
+                  {Array.from({ length: 5 }).map((_, seatIdx) => {
+                    const occupant = seatedPlayers[seatIdx];
+                    return (
+                      <div
+                        key={seatIdx}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
+                          occupant
+                            ? occupant.uid === currentUser.uid
+                              ? 'bg-amber-400/15 border-amber-400'
+                              : 'bg-emerald-950/60 border-emerald-500/40'
+                            : 'bg-black/30 border-dashed border-stone-800 text-stone-500'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono-tabular text-[10px] font-bold text-amber-300">
+                            Seat {seatIdx + 1}
+                          </span>
+                          {occupant ? (
+                            <div className="truncate">
+                              <span className="font-bold text-white">
+                                {occupant.displayName}{' '}
+                                {occupant.uid === currentUser.uid && '(You)'}
+                              </span>
+                              <span className="block text-[10px] text-emerald-300">
+                                {occupant.lastAction || 'Playing hand'}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] italic">Open Seat</span>
+                          )}
+                        </div>
+
+                        {occupant ? (
+                          <span className="font-mono text-[10px] text-stone-400 font-bold">
+                            L{occupant.level}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setOnlineSubTab('all')}
+                            className="text-[10px] font-extrabold text-amber-300 hover:underline cursor-pointer"
+                          >
+                            + Invite Patron
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : onlineSubTab === 'friends' ? (
+                <div className="space-y-2">
+                  <form onSubmit={handleFriendSubmit} className="flex gap-1 mb-2">
+                    <input
+                      type="text"
+                      value={friendQuery}
+                      onChange={(e) => setFriendQuery(e.target.value)}
+                      placeholder="Enter Player Handle or ID..."
+                      className="flex-1 bg-[#050b08] border border-stone-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                    />
+                    <button
+                      type="submit"
+                      className="btn-arcade-gold px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer"
+                    >
+                      +Add
+                    </button>
+                  </form>
+
+                  {friendsList.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-stone-400 leading-relaxed">
+                      <p>You haven't added any friends yet.</p>
+                      <p className="mt-1 text-stone-500">
+                        Tap <span className="text-amber-300 font-bold">+Friend</span> on any online patron!
+                      </p>
+                    </div>
+                  ) : (
+                    friendsList.map((f) => {
+                      const live = displayedOnline.find((p) => p.uid === f.targetUid);
+                      return (
+                        <div
+                          key={f.targetUid}
+                          className="p-2.5 rounded-xl bg-[#09140f] border border-stone-800 flex items-center justify-between"
+                        >
+                          <div>
+                            <div className="text-xs font-bold text-white">{f.targetName}</div>
+                            <div className="text-[10px] text-emerald-300 font-mono">
+                              {live ? `Online · ${live.currentGame || 'Lobby'}` : 'Offline'}
+                            </div>
+                          </div>
+                          {live && activeRoom && (
+                            <button
+                              type="button"
+                              onClick={() => onInvitePlayer(live.uid)}
+                              className="px-2.5 py-1 rounded bg-amber-400 text-stone-950 font-black text-[10px] cursor-pointer"
+                            >
+                              Invite
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ) : (
+                /* ALL ONLINE PATRONS LIST */
+                <div className="space-y-1.5">
+                  {displayedOnline.map((player) => {
+                    const isMe = player.uid === currentUser.uid;
+                    const isFriend = friendsList.some((f) => f.targetUid === player.uid);
+                    const playerRoom = rooms.find((r) => r.id === player.currentRoomId);
+
+                    return (
+                      <div
+                        key={player.uid}
+                        className={`p-2.5 rounded-xl border transition-all ${
+                          isMe
+                            ? 'bg-amber-400/10 border-amber-400/40'
+                            : 'bg-[#091510] border-stone-800/90 hover:border-amber-400/30'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-stone-950 font-bold text-[10px] flex items-center justify-center shrink-0">
+                              {player.displayName[0]?.toUpperCase() || 'P'}
+                            </div>
+                            <div className="truncate">
+                              <span className="text-xs font-bold text-white truncate block">
+                                {player.displayName}{' '}
+                                {isMe && <span className="text-amber-300">(You)</span>}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="font-mono text-[10px] font-extrabold bg-stone-900 border border-stone-700 text-amber-300 px-1.5 py-0.5 rounded">
+                              L{player.level}
+                            </span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[10px] text-stone-400 pt-1 border-t border-stone-800/60 mt-1">
+                          <span className="text-emerald-300/90 font-medium truncate">
+                            {player.currentGame ? `Playing ${player.currentGame}` : playerRoom ? playerRoom.name : 'In Lounge'}
+                          </span>
+                          <span className="font-mono text-amber-200/80">
+                            {(player.chips || 0).toLocaleString()} Chips
+                          </span>
+                        </div>
+
+                        {!isMe && (
+                          <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-stone-800/40 justify-end">
+                            {activeRoom && (
+                              <button
+                                type="button"
+                                onClick={() => onInvitePlayer(player.uid)}
+                                className="px-2 py-0.5 rounded bg-amber-400/20 border border-amber-400/50 text-amber-300 text-[10px] font-black hover:bg-amber-400 hover:text-stone-950 transition-colors cursor-pointer"
+                              >
+                                Invite to Table
+                              </button>
+                            )}
+
+                            {player.currentRoomId && player.currentRoomId !== 'lobby' && (
+                              <button
+                                type="button"
+                                onClick={() => onJoinRoom(player.currentRoomId, 'player')}
+                                className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black hover:bg-emerald-500 hover:text-stone-950 transition-colors cursor-pointer"
+                              >
+                                Join Table
+                              </button>
+                            )}
+
+                            {!isFriend && (
+                              <button
+                                type="button"
+                                onClick={() => onAddFriend(player.uid)}
+                                className="px-2 py-0.5 rounded bg-stone-800 hover:bg-stone-700 text-stone-300 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                                title="Add to Friends"
+                              >
+                                <UserPlus className="w-2.5 h-2.5" />
+                                <span>Friend</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 2: PARLOR LIVE CHAT */}
+        {sidebarView === 'chat' && (
+          <div className="flex-1 flex flex-col min-h-0 bg-[#07110d]">
+            {/* Chat Messages Log */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+              {chatMessages.length === 0 ? (
+                <div className="text-center py-10 text-xs text-stone-400 leading-relaxed">
+                  <p>Welcome to the Velvet &amp; Brass Parlor!</p>
+                  <p className="mt-1 text-stone-500">Say hello or share your jackpot rolls with the club.</p>
+                </div>
+              ) : (
+                chatMessages.map((msg) => {
+                  const isMe = msg.senderId === currentUser.uid;
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                    >
+                      <div className="flex items-center gap-1.5 text-[10px] text-stone-400 mb-0.5 px-1">
+                        <span className={`font-bold ${isMe ? 'text-amber-300' : 'text-stone-300'}`}>
+                          {msg.senderName} {isMe && '(You)'}
+                        </span>
+                        <span className="text-[9px] text-stone-500">
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div
+                        className={`rounded-2xl px-3 py-1.5 text-xs max-w-[88%] break-words ${
+                          isMe
+                            ? 'bg-amber-400 text-stone-950 font-semibold rounded-br-xs shadow-md'
+                            : 'bg-[#0e2118] text-stone-100 border border-amber-500/20 rounded-bl-xs'
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Quick Emoji Reaction Bar */}
+            <div className="px-3 py-1.5 bg-[#050b08] border-t border-stone-800 flex items-center justify-between gap-1 shrink-0">
+              {REACTION_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => onSendReaction(emoji)}
+                  className="w-7 h-7 rounded-lg hover:bg-stone-800 flex items-center justify-center text-sm transition-transform active:scale-125 cursor-pointer"
+                  title={`Send ${emoji} reaction`}
+                >
+                  {emoji}
                 </button>
               ))}
             </div>
-          </div>
 
-          <div className="max-h-44 overflow-y-auto px-3 py-2 space-y-1.5">
-            {directoryTab === 'party' && (
-              <div className="space-y-1">
-                {Array.from({ length: 5 }).map((_, idx) => {
-                  const seatPlayer = activeRoom
-                    ? seatedPlayers[idx]
-                    : idx === 0
-                    ? {
-                        uid: currentUser.uid,
-                        displayName: currentUser.displayName,
-                        level: currentUser.level,
-                        role: 'player' as const,
-                      }
-                    : undefined;
-
-                  return (
-                    <div
-                      key={idx}
-                      className={`px-2.5 py-1.5 rounded-xl border flex items-center justify-between text-xs ${
-                        seatPlayer
-                          ? 'bg-[#0d1f18] border-amber-500/30 text-stone-100'
-                          : 'bg-black/25 border-dashed border-stone-800 text-stone-500'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="font-mono-tabular text-[10px] text-amber-400 font-bold">
-                          Seat {idx + 1}
-                        </span>
-                        {seatPlayer ? (
-                          <span className="font-bold text-white truncate">
-                            {seatPlayer.displayName}{' '}
-                            {seatPlayer.uid === currentUser.uid && '(You)'}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] italic">Open VIP Seat</span>
-                        )}
-                      </div>
-
-                      {seatPlayer ? (
-                        <span className="font-mono-tabular text-[10px] text-emerald-300 shrink-0">
-                          L{seatPlayer.level}
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setDirectoryTab('online')}
-                          className="text-[10px] font-bold text-amber-300 hover:underline cursor-pointer shrink-0"
-                        >
-                          +Invite
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {directoryTab === 'online' &&
-              onlinePlayers.map((player) => {
-                const isMe = player.uid === currentUser.uid;
-                const isFriend = friendsList.some((f) => f.targetUid === player.uid);
-                const playerRoom = rooms.find((r) => r.id === player.currentRoomId);
-                return (
-                  <div
-                    key={player.uid}
-                    className="p-2 rounded-xl bg-[#050b08] border border-stone-800/90 flex items-center justify-between gap-2"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-stone-100 truncate">
-                        {player.displayName} {isMe && '(You)'}
-                      </div>
-                      <div className="text-[10px] text-stone-400 truncate">
-                        L{player.level} · {playerRoom ? playerRoom.name : 'Lobby'}
-                      </div>
-                    </div>
-
-                    {!isMe && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => onInvitePlayer(player.uid)}
-                          className="px-2 py-0.5 bg-amber-400 text-stone-950 rounded-md text-[10px] font-extrabold cursor-pointer"
-                        >
-                          Invite
-                        </button>
-                        {player.currentRoomId && player.currentRoomId !== 'lobby' && (
-                          <button
-                            type="button"
-                            onClick={() => onJoinRoom(player.currentRoomId, 'player')}
-                            className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 rounded-md text-[10px] font-bold cursor-pointer"
-                          >
-                            Join
-                          </button>
-                        )}
-                        {!isFriend && (
-                          <button
-                            type="button"
-                            onClick={() => onAddFriend(player.uid)}
-                            className="p-1 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-md cursor-pointer"
-                            title="Add Friend"
-                          >
-                            <UserPlus className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-            {directoryTab === 'friends' && (
-              <div className="space-y-2">
-                <form onSubmit={handleFriendSubmit} className="flex gap-1">
-                  <input
-                    type="text"
-                    value={friendQuery}
-                    onChange={(e) => setFriendQuery(e.target.value)}
-                    placeholder="Add Friend Handle or ID..."
-                    className="flex-1 bg-[#050b08] border border-stone-700 rounded-lg px-2.5 py-1 text-[11px] text-stone-100 focus:outline-none focus:border-amber-400"
-                  />
-                  <button
-                    type="submit"
-                    className="btn-arcade-gold px-2.5 py-1 rounded-lg text-[10px] font-extrabold cursor-pointer shrink-0"
-                  >
-                    +Add
-                  </button>
-                </form>
-
-                {friendsList.length === 0 ? (
-                  <div className="text-[11px] text-stone-400 py-1">
-                    Share handle <strong className="text-amber-200">{currentUser.displayName}</strong> to invite 1–4 friends.
-                  </div>
-                ) : (
-                  friendsList.map((f) => {
-                    const liveFriend = onlinePlayers.find((p) => p.uid === f.targetUid);
-                    return (
-                      <div
-                        key={f.targetUid}
-                        className="p-2 rounded-xl bg-[#050b08] border border-stone-800 flex items-center justify-between gap-2"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-white truncate">
-                            {f.targetName}
-                          </div>
-                          <div className="text-[10px] text-stone-400 truncate">
-                            {liveFriend ? `Online · ${liveFriend.currentGame}` : 'Offline'}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {liveFriend && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => onInvitePlayer(f.targetUid)}
-                                className="px-2 py-0.5 bg-amber-400 text-stone-950 rounded text-[10px] font-extrabold cursor-pointer"
-                              >
-                                Invite
-                              </button>
-                              {liveFriend.currentRoomId &&
-                                liveFriend.currentRoomId !== 'lobby' && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      onJoinRoom(liveFriend.currentRoomId, 'player')
-                                    }
-                                    className="p-1 bg-emerald-500/20 text-emerald-300 rounded cursor-pointer"
-                                    title="Join Table"
-                                  >
-                                    <Play className="w-3 h-3" />
-                                  </button>
-                                )}
-                            </>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => onRemoveFriend(f.targetUid)}
-                            className="text-[10px] text-stone-500 hover:text-rose-400 ml-1 cursor-pointer"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-
-            {directoryTab === 'recent' &&
-              (recentList.length === 0 ? (
-                <p className="text-[11px] text-stone-500 py-2">
-                  Recent 1–5 player table-mates will appear here.
-                </p>
-              ) : (
-                recentList.map((rec) => (
-                  <div
-                    key={rec.targetUid}
-                    className="p-2 rounded-xl bg-[#050b08] border border-stone-800 flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="text-xs font-bold text-stone-100">{rec.targetName}</div>
-                      <div className="text-[10px] text-stone-400">
-                        Played {rec.lastPlayedGame.toUpperCase()}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => onInvitePlayer(rec.targetUid)}
-                        className="px-2 py-0.5 bg-amber-400/20 text-amber-200 rounded text-[10px] cursor-pointer"
-                      >
-                        Invite
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onAddFriend(rec.targetUid)}
-                        className="px-2 py-0.5 bg-stone-800 text-stone-200 rounded text-[10px] cursor-pointer"
-                      >
-                        +Friend
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ))}
-          </div>
-        </div>
-      )}
-
-      {socialNotice && (
-        <div className="px-3.5 py-2 bg-amber-500/15 border-b border-amber-500/30 text-[11px] font-semibold text-amber-200 shrink-0">
-          {socialNotice}
-        </div>
-      )}
-
-      {/* Quick 1-5 Party Seat Strip (Always visible mini-bar under chat header) */}
-      <div className="px-3 py-2 border-b border-stone-800/80 bg-[#08130e] flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400">
-          <Users className="w-3 h-3 text-amber-400" />
-          <span>1–5 Party:</span>
-        </div>
-        <div className="flex items-center gap-1">
-          {Array.from({ length: 5 }).map((_, idx) => {
-            const seatPlayer = activeRoom
-              ? seatedPlayers[idx]
-              : idx === 0
-              ? currentUser
-              : undefined;
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => {
-                  setDirectoryTab(seatPlayer ? 'party' : 'online');
-                  setDirectoryOpen((prev) => !prev);
-                }}
-                title={
-                  seatPlayer
-                    ? `Seat ${idx + 1}: ${seatPlayer.displayName}`
-                    : `Seat ${idx + 1}: Open (Click to invite)`
-                }
-                className={`w-6 h-6 rounded-full text-[9px] font-extrabold flex items-center justify-center border transition-transform hover:scale-105 cursor-pointer ${
-                  seatPlayer
-                    ? 'bg-amber-400/20 border-amber-400 text-amber-200'
-                    : 'bg-black/40 border-dashed border-stone-700 text-stone-500 hover:border-amber-400/50'
-                }`}
-              >
-                {seatPlayer ? seatPlayer.displayName.slice(0, 2).toUpperCase() : '+'}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Chat Message Feed — Always scrollable inside the right-hand sidebar */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2.5 bg-[#060d0a]">
-        {chatMessages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center px-4 py-8 text-stone-500">
-            <MessageSquare className="w-6 h-6 text-stone-600 mb-2" />
-            <p className="text-xs font-semibold text-stone-400">No messages yet</p>
-            <p className="text-[11px] text-stone-500 mt-0.5">
-              Invite 1–4 friends to your table and start chatting live.
-            </p>
-          </div>
-        ) : (
-          chatMessages.map((m) => {
-          if (m.isSystem) {
-            return (
-              <div
-                key={m.id}
-                className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-200/90 flex items-center gap-2"
-              >
-                <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                <span>{m.text}</span>
-              </div>
-            );
-          }
-
-          const isMe = m.senderId === currentUser.uid;
-          const ringStyle = AVATAR_RING_COLORS[hashIndex(m.senderName, AVATAR_RING_COLORS.length)];
-          const badgeStyle = BADGE_COLORS[hashIndex(m.senderName, BADGE_COLORS.length)];
-          const badgeLetter = m.senderName.replace(/^Patron_/i, '').slice(0, 1).toUpperCase() || 'V';
-          const formattedTime = new Date(m.timestamp).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          });
-
-          return (
-            <div
-              key={m.id}
-              className={`p-2.5 rounded-2xl border transition-colors ${
-                isMe
-                  ? 'bg-[#0f221a] border-amber-400/35'
-                  : 'bg-[#0b1712] border-stone-800/90 hover:border-stone-700'
-              }`}
+            {/* Chat Input Bar */}
+            <form
+              onSubmit={handleChatSubmit}
+              className="p-2.5 bg-[#08120e] border-t border-amber-500/20 flex items-center gap-1.5 shrink-0"
             >
-              <div className="flex items-start gap-2.5">
-                <div
-                  className={`w-7 h-7 rounded-full border-2 flex items-center justify-center font-display text-[10px] font-bold shrink-0 ${ringStyle}`}
-                >
-                  {m.senderName.slice(0, 2).toUpperCase()}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span
-                      className={`text-xs font-extrabold truncate ${
-                        isMe ? 'text-amber-300' : 'text-stone-100'
-                      }`}
-                    >
-                      {m.senderName}
-                    </span>
-                    <span
-                      className={`px-1.5 py-0.2 rounded text-[9px] font-mono-tabular font-extrabold border ${badgeStyle}`}
-                    >
-                      {badgeLetter}
-                    </span>
-                    <span className="text-[10px] font-mono-tabular text-stone-500">
-                      {formattedTime}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-stone-300 mt-1 leading-relaxed break-words">
-                    {m.text}
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        })
-        )}
-        <div ref={chatEndRef} />
-      </div>
-
-      {/* Pop-up Emoji Reaction Bar */}
-      {showEmojiPicker && (
-        <div className="px-3 py-2 bg-[#0b1712] border-t border-amber-500/25 flex items-center justify-between shrink-0">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
-            Reactions
-          </span>
-          <div className="flex items-center gap-1">
-            {REACTION_EMOJIS.map((emoji) => (
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Message parlor table..."
+                className="flex-1 bg-[#050b08] border border-stone-700 focus:border-amber-400 rounded-xl px-3 py-2 text-xs font-medium text-white placeholder-stone-500 focus:outline-none"
+              />
               <button
-                key={emoji}
-                type="button"
-                onClick={() => {
-                  onSendReaction(emoji);
-                  setShowEmojiPicker(false);
-                }}
-                className="w-6 h-6 rounded-lg hover:bg-stone-800 flex items-center justify-center text-sm transition-transform active:scale-125 cursor-pointer"
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="w-8 h-8 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
               >
-                {emoji}
+                <Send className="w-3.5 h-3.5 fill-stone-950" />
               </button>
-            ))}
+            </form>
           </div>
-        </div>
-      )}
-
-      {/* Bottom Input Box */}
-      <div className="p-2.5 bg-[#08120e] border-t border-amber-500/15 shrink-0">
-        <form
-          onSubmit={handleChatSubmit}
-          className="bg-[#0d1a14] border border-stone-800 focus-within:border-amber-400/50 rounded-2xl p-1.5 flex items-center gap-1.5"
-        >
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder="Write message ..."
-            maxLength={240}
-            className="flex-1 min-w-0 bg-transparent px-2 py-1.5 text-xs text-stone-100 placeholder-stone-500 focus:outline-none"
-          />
-
-          <button
-            type="button"
-            onClick={() => setShowEmojiPicker((prev) => !prev)}
-            title="Send Table Emoji Reaction"
-            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-              showEmojiPicker
-                ? 'bg-amber-400/20 text-amber-300'
-                : 'bg-stone-800/80 text-stone-400 hover:text-amber-300'
-            }`}
-          >
-            <Smile className="w-4 h-4" />
-          </button>
-
-          <button
-            type="submit"
-            title="Send Message"
-            className="w-8 h-8 rounded-xl btn-arcade-gold flex items-center justify-center cursor-pointer shrink-0"
-          >
-            <Send className="w-3.5 h-3.5" />
-          </button>
-        </form>
-      </div>
-    </aside>
+        )}
+      </aside>
+    </>
   );
 };

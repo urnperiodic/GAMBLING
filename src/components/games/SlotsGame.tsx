@@ -15,6 +15,7 @@ interface SlotsGameProps {
     multiplier: number;
     summary: string;
   }) => void;
+  onEmergencyBailout?: () => void;
 }
 
 interface SlotSymbol {
@@ -65,6 +66,7 @@ export const SlotsGame: React.FC<SlotsGameProps> = ({
   isSpectator,
   minBet,
   onCompleteRound,
+  onEmergencyBailout,
 }) => {
   const [wager, setWager] = useState<number>(Math.max(20, minBet));
   const [grid, setGrid] = useState<GridState>(() => generateGrid());
@@ -177,9 +179,9 @@ export const SlotsGame: React.FC<SlotsGameProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
       {/* Left Arcade Control Console & Paytable */}
-      <div className="lg:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+      <div className="xl:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
         <div className="space-y-4">
           <ChipRack
             wager={wager}
@@ -187,16 +189,28 @@ export const SlotsGame: React.FC<SlotsGameProps> = ({
             minBet={minBet}
             disabled={spinning || isSpectator}
             onChangeWager={setWager}
+            onEmergencyBailout={onEmergencyBailout}
           />
 
-          <button
-            type="button"
-            disabled={spinning || isSpectator || wager > balance || wager < minBet}
-            onClick={spinReels}
-            className="btn-arcade-gold w-full py-4 px-5 rounded-xl font-extrabold text-sm uppercase tracking-wider cursor-pointer whitespace-nowrap shrink-0"
-          >
-            {spinning ? 'Spinning Brass Reels...' : `SPIN REELS (${wager.toLocaleString()} CHIPS)`}
-          </button>
+          <div className="space-y-2">
+            {balance < minBet && onEmergencyBailout && (
+              <button
+                type="button"
+                onClick={onEmergencyBailout}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-stone-950 font-black text-xs uppercase tracking-wider cursor-pointer shadow-md animate-pulse"
+              >
+                ⚡ Claim +5,000 Bailout
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={spinning || isSpectator || wager > balance || wager < minBet}
+              onClick={spinReels}
+              className="btn-arcade-gold w-full py-4 px-5 rounded-xl font-extrabold text-sm uppercase tracking-wider cursor-pointer whitespace-nowrap shrink-0"
+            >
+              {spinning ? 'Spinning Brass Reels...' : `SPIN REELS (${wager.toLocaleString()} CHIPS)`}
+            </button>
+          </div>
 
           {/* Compact Paytable */}
           <div className="pt-3 border-t border-stone-800">
@@ -223,7 +237,7 @@ export const SlotsGame: React.FC<SlotsGameProps> = ({
       </div>
 
       {/* Right Mechanical Slot Machine Cabinet */}
-      <div className="lg:col-span-8 casino-table-rail bg-gradient-to-b from-[#23140d] via-[#160d08] to-[#0d0704] rounded-2xl p-6 flex flex-col justify-between relative">
+      <div className="xl:col-span-8 casino-table-rail bg-gradient-to-b from-[#23140d] via-[#160d08] to-[#0d0704] rounded-2xl p-6 flex flex-col justify-between relative">
         {/* Top Lit Jackpot Marquee */}
         <div className="bg-gradient-to-r from-amber-950 via-amber-800/40 to-amber-950 border-2 border-amber-400 rounded-xl px-4 py-2.5 flex items-center justify-between shadow-lg">
           <span className="font-display text-sm font-bold tracking-widest text-amber-200">

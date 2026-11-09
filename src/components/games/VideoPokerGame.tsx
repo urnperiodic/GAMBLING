@@ -16,6 +16,7 @@ interface VideoPokerGameProps {
     multiplier: number;
     summary: string;
   }) => void;
+  onEmergencyBailout?: () => void;
 }
 
 type VideoPokerVariant = 'jacks-or-better' | 'deuces-wild' | 'double-bonus';
@@ -234,6 +235,7 @@ export const VideoPokerGame: React.FC<VideoPokerGameProps> = ({
   isSpectator,
   minBet,
   onCompleteRound,
+  onEmergencyBailout,
 }) => {
   const [variant, setVariant] = useState<VideoPokerVariant>('jacks-or-better');
   const [wager, setWager] = useState<number>(Math.max(25, minBet));
@@ -334,9 +336,9 @@ export const VideoPokerGame: React.FC<VideoPokerGameProps> = ({
   const cardSuitColor = (suit: Suit) => (suit === '♥' || suit === '♦' ? 'text-rose-400' : 'text-stone-200');
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
       {/* Left Paytable & Controls */}
-      <div className="lg:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+      <div className="xl:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
         <div className="space-y-4">
           {/* Machine Variant Selector */}
           <div>
@@ -373,6 +375,7 @@ export const VideoPokerGame: React.FC<VideoPokerGameProps> = ({
             minBet={minBet}
             disabled={phase === 'hold' || isSpectator}
             onChangeWager={setWager}
+            onEmergencyBailout={onEmergencyBailout}
           />
 
           {phase === 'hold' ? (
@@ -384,14 +387,25 @@ export const VideoPokerGame: React.FC<VideoPokerGameProps> = ({
               DRAW NEW CARDS
             </button>
           ) : (
-            <button
-              type="button"
-              disabled={isSpectator || wager > balance || wager < minBet}
-              onClick={handleDeal}
-              className="btn-arcade-gold w-full py-4 px-5 rounded-xl font-extrabold text-sm uppercase tracking-wider cursor-pointer whitespace-nowrap shrink-0"
-            >
-              DEAL 5 CARDS ({wager.toLocaleString()} CHIPS)
-            </button>
+            <div className="space-y-2">
+              {balance < minBet && onEmergencyBailout && (
+                <button
+                  type="button"
+                  onClick={onEmergencyBailout}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-stone-950 font-black text-xs uppercase tracking-wider cursor-pointer shadow-md animate-pulse"
+                >
+                  ⚡ Claim +5,000 Bailout
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={isSpectator || wager > balance || wager < minBet}
+                onClick={handleDeal}
+                className="btn-arcade-gold w-full py-4 px-5 rounded-xl font-extrabold text-sm uppercase tracking-wider cursor-pointer whitespace-nowrap shrink-0"
+              >
+                DEAL 5 CARDS ({wager.toLocaleString()} CHIPS)
+              </button>
+            </div>
           )}
 
           {/* Neon Paytable Board */}
@@ -423,7 +437,7 @@ export const VideoPokerGame: React.FC<VideoPokerGameProps> = ({
       </div>
 
       {/* Right Mechanical Card Rail */}
-      <div className="lg:col-span-8 bg-[#0a1712] border-4 border-[#331c12] rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden min-h-[480px]">
+      <div className="xl:col-span-8 bg-[#0a1712] border-4 border-[#331c12] rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden min-h-[480px]">
         {/* Felt Watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
           <span className="font-display text-8xl font-black text-amber-300">VIDEO POKER</span>

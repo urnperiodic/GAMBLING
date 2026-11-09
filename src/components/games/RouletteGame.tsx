@@ -14,6 +14,7 @@ interface RouletteGameProps {
     multiplier: number;
     summary: string;
   }) => void;
+  onEmergencyBailout?: () => void;
 }
 
 const RED_NUMBERS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
@@ -39,6 +40,7 @@ export const RouletteGame: React.FC<RouletteGameProps> = ({
   isSpectator,
   minBet,
   onCompleteRound,
+  onEmergencyBailout,
 }) => {
   const [chipUnit, setChipUnit] = useState<number>(Math.max(25, minBet));
   const [bets, setBets] = useState<Record<string, number>>({});
@@ -167,9 +169,9 @@ export const RouletteGame: React.FC<RouletteGameProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
       {/* Left Animated Roulette Wheel & 3D Chip Selector */}
-      <div className="lg:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+      <div className="xl:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
         <div className="space-y-4">
           {/* Visual Spinning Monte Carlo Wheel */}
           <div className="bg-[#060d0a] border-2 border-amber-500/30 rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden">
@@ -268,6 +270,16 @@ export const RouletteGame: React.FC<RouletteGameProps> = ({
             </div>
           </div>
 
+          {balance < minBet && onEmergencyBailout && (
+            <button
+              type="button"
+              onClick={onEmergencyBailout}
+              className="w-full py-2.5 px-3 rounded-xl text-xs font-extrabold bg-gradient-to-r from-emerald-600 to-amber-600 hover:from-emerald-500 hover:to-amber-500 text-stone-950 shadow-md uppercase tracking-wide cursor-pointer transition-transform active:scale-95"
+            >
+              ⚡ Broke? Request +5,000 Bailout
+            </button>
+          )}
+
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -313,7 +325,7 @@ export const RouletteGame: React.FC<RouletteGameProps> = ({
       </div>
 
       {/* Right Casino Roulette Felt Board */}
-      <div className="lg:col-span-8 casino-table-rail casino-felt-surface rounded-2xl p-5 flex flex-col justify-between">
+      <div className="xl:col-span-8 casino-table-rail casino-felt-surface rounded-2xl p-5 flex flex-col justify-between">
         <div className="text-xs text-amber-200 font-semibold mb-2 flex items-center justify-between">
           <span>MONTE CARLO SINGLE-ZERO FELT · STRAIGHT UP PAYS 35 TO 1</span>
           <span>TAP ANY NUMBER OR ZONE TO PLACE CHIPS</span>

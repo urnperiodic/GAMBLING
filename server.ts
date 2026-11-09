@@ -144,19 +144,205 @@ function savePersistedData() {
 const rooms = new Map<string, ServerRoom>();
 const roomChats = new Map<string, ChatMessage[]>();
 
+const CLUB_PATRONS: StoredProfile[] = [
+  {
+    uid: 'patron_eleanor',
+    displayName: 'Lady Eleanor Vance',
+    chips: 4850000,
+    xp: 24500,
+    level: 48,
+    chipTheme: 'obsidian-gold',
+    tableTheme: 'midnight-velvet',
+    gamesPlayed: 142,
+    totalWon: 9200000,
+    biggestWin: 920000,
+    dailyStreak: 12,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'in-game',
+    currentGame: "Texas Hold'em",
+    currentRoomId: 'room_holdem_main',
+    unlockedAchievements: ['first-wager', 'veteran-10', 'high-roller-win'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_sterling',
+    displayName: 'Duke Sterling',
+    chips: 3200000,
+    xp: 18400,
+    level: 42,
+    chipTheme: 'classic-brass',
+    tableTheme: 'emerald-felt',
+    gamesPlayed: 98,
+    totalWon: 5400000,
+    biggestWin: 650000,
+    dailyStreak: 8,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'in-game',
+    currentGame: 'Roulette',
+    currentRoomId: 'room_roulette_main',
+    unlockedAchievements: ['first-wager', 'veteran-10'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_camille',
+    displayName: 'Duchess Camille',
+    chips: 2450000,
+    xp: 14200,
+    level: 35,
+    chipTheme: 'emerald-royale',
+    tableTheme: 'emerald-felt',
+    gamesPlayed: 85,
+    totalWon: 4100000,
+    biggestWin: 480000,
+    dailyStreak: 6,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'in-game',
+    currentGame: 'Plinko',
+    currentRoomId: 'room_plinko_main',
+    unlockedAchievements: ['first-wager', 'plinko-high-drop'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_baron',
+    displayName: 'Baron Von Cash',
+    chips: 1980000,
+    xp: 12100,
+    level: 31,
+    chipTheme: 'crimson-velvet',
+    tableTheme: 'royal-burgundy',
+    gamesPlayed: 76,
+    totalWon: 3500000,
+    biggestWin: 380000,
+    dailyStreak: 5,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'in-game',
+    currentGame: 'Blackjack',
+    currentRoomId: 'room_blackjack_vip',
+    unlockedAchievements: ['first-wager', 'blackjack-natural'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_vesper',
+    displayName: 'Countess Vesper',
+    chips: 1650000,
+    xp: 9800,
+    level: 28,
+    chipTheme: 'cyber-platinum',
+    tableTheme: 'mahogany-club',
+    gamesPlayed: 64,
+    totalWon: 2800000,
+    biggestWin: 310000,
+    dailyStreak: 4,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'in-game',
+    currentGame: 'Three Card Poker',
+    currentRoomId: 'room_threecard_main',
+    unlockedAchievements: ['first-wager'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_jax',
+    displayName: 'High-Roller Jax',
+    chips: 1250000,
+    xp: 8500,
+    level: 25,
+    chipTheme: 'classic-brass',
+    tableTheme: 'emerald-felt',
+    gamesPlayed: 52,
+    totalWon: 1950000,
+    biggestWin: 240000,
+    dailyStreak: 3,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'in-game',
+    currentGame: 'Brass Dice',
+    currentRoomId: 'room_dice_main',
+    unlockedAchievements: ['first-wager'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_viktor',
+    displayName: 'Viktor Sterling',
+    chips: 890000,
+    xp: 6200,
+    level: 21,
+    chipTheme: 'obsidian-gold',
+    tableTheme: 'midnight-velvet',
+    gamesPlayed: 41,
+    totalWon: 1400000,
+    biggestWin: 180000,
+    dailyStreak: 2,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: 'Video Poker',
+    currentRoomId: 'room_poker_main',
+    unlockedAchievements: ['first-wager'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    uid: 'patron_finch',
+    displayName: 'Marcus Finch',
+    chips: 520000,
+    xp: 4100,
+    level: 16,
+    chipTheme: 'emerald-royale',
+    tableTheme: 'emerald-felt',
+    gamesPlayed: 33,
+    totalWon: 850000,
+    biggestWin: 95000,
+    dailyStreak: 2,
+    lastDailyClaim: '',
+    lastAllowanceClaim: '',
+    status: 'online',
+    currentGame: 'Lobby Lounge',
+    currentRoomId: 'lobby',
+    unlockedAchievements: ['first-wager'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
 function initDefaultRooms() {
-  const defaults: Array<{ id: string; name: string; gameType: GameType; minBet: number }> = [
-    { id: 'room_plinko_main', name: 'Grand Brass Plinko Pyramid', gameType: 'plinko', minBet: 25 },
-    { id: 'room_blackjack_vip', name: 'Monte Carlo Blackjack Salon', gameType: 'blackjack', minBet: 50 },
-    { id: 'room_roulette_main', name: 'Single-Zero Roulette Parlor', gameType: 'roulette', minBet: 25 },
-    { id: 'room_slots_main', name: 'Velvet Reels Mechanical Gallery', gameType: 'slots', minBet: 20 },
-    { id: 'room_poker_main', name: 'Jacks or Better Draw Club', gameType: 'videopoker', minBet: 25 },
-    { id: 'room_dice_main', name: 'High-Roller Brass Dice Table', gameType: 'dice', minBet: 10 },
-    { id: 'room_holdem_main', name: "High-Stakes Texas Hold'em Salon", gameType: 'holdem', minBet: 50 },
-    { id: 'room_threecard_main', name: 'Royal Three Card Poker Club', gameType: 'threecardpoker', minBet: 25 },
+  const defaults: Array<{ id: string; name: string; gameType: GameType; minBet: number; patronIds: string[] }> = [
+    { id: 'room_plinko_main', name: 'Grand Brass Plinko Pyramid', gameType: 'plinko', minBet: 25, patronIds: ['patron_camille'] },
+    { id: 'room_blackjack_vip', name: 'Monte Carlo Blackjack Salon', gameType: 'blackjack', minBet: 50, patronIds: ['patron_baron'] },
+    { id: 'room_roulette_main', name: 'Single-Zero Roulette Parlor', gameType: 'roulette', minBet: 25, patronIds: ['patron_sterling'] },
+    { id: 'room_slots_main', name: 'Velvet Reels Mechanical Gallery', gameType: 'slots', minBet: 20, patronIds: ['patron_finch'] },
+    { id: 'room_poker_main', name: 'Jacks or Better Draw Club', gameType: 'videopoker', minBet: 25, patronIds: ['patron_viktor'] },
+    { id: 'room_dice_main', name: 'High-Roller Brass Dice Table', gameType: 'dice', minBet: 10, patronIds: ['patron_jax'] },
+    { id: 'room_holdem_main', name: "High-Stakes Texas Hold'em Salon", gameType: 'holdem', minBet: 50, patronIds: ['patron_eleanor'] },
+    { id: 'room_threecard_main', name: 'Royal Three Card Poker Club', gameType: 'threecardpoker', minBet: 25, patronIds: ['patron_vesper'] },
   ];
 
   for (const d of defaults) {
+    const participants: RoomParticipant[] = [];
+    for (const pId of d.patronIds) {
+      const patron = CLUB_PATRONS.find((p) => p.uid === pId);
+      if (patron) {
+        participants.push({
+          uid: patron.uid,
+          displayName: patron.displayName,
+          level: patron.level,
+          chipTheme: patron.chipTheme,
+          role: 'player',
+          lastAction: 'Seated at table',
+        });
+      }
+    }
+
     rooms.set(d.id, {
       id: d.id,
       hostId: 'house',
@@ -166,14 +352,31 @@ function initDefaultRooms() {
       isPrivate: false,
       minBet: d.minBet,
       status: 'open',
-      participants: [],
+      participants,
       recentActivity: [],
       createdAt: new Date().toISOString(),
       isDefault: true,
     });
     roomChats.set(d.id, []);
   }
-  roomChats.set('lobby', []);
+  roomChats.set('lobby', [
+    {
+      id: 'chat_init_1',
+      roomId: 'lobby',
+      senderId: 'patron_eleanor',
+      senderName: 'Lady Eleanor Vance',
+      text: 'Good evening patrons! The Hold\'em tables are paying beautifully tonight.',
+      timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    },
+    {
+      id: 'chat_init_2',
+      roomId: 'lobby',
+      senderId: 'patron_sterling',
+      senderName: 'Duke Sterling',
+      text: 'Just hit 32 Red on the Monte Carlo wheel. Virtual chips flowing!',
+      timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    },
+  ]);
 }
 
 initDefaultRooms();
@@ -328,6 +531,12 @@ async function startServer() {
     for (const uid of onlineUids) {
       const p = dbStore.profiles[uid];
       if (p) result.push(p);
+    }
+    // Always include club patrons to guarantee a thriving parlor roster!
+    for (const patron of CLUB_PATRONS) {
+      if (!onlineUids.has(patron.uid)) {
+        result.push(patron);
+      }
     }
     return result;
   }
@@ -530,6 +739,44 @@ async function startServer() {
           return;
         }
 
+        if (type === 'economy:emergency_bailout') {
+          const grant = 5000;
+          profile.chips += grant;
+          profile.updatedAt = new Date().toISOString();
+          const tx = appendTransaction(
+            uid,
+            'allowance',
+            'House Relief',
+            grant,
+            profile.chips,
+            'House Broke Relief Bailout (+5,000 chips)'
+          );
+          savePersistedData();
+          sendToUid(uid, 'profile:synced', {
+            profile,
+            transactions: dbStore.transactions[uid] || [],
+            connections: dbStore.connections[uid] || [],
+            lastTransaction: tx,
+          });
+          broadcastPresenceAndRooms();
+          return;
+        }
+
+        if (type === 'economy:sync_chips') {
+          if (typeof payload?.chips === 'number') {
+            profile.chips = Math.max(0, Math.floor(payload.chips));
+            profile.updatedAt = new Date().toISOString();
+            savePersistedData();
+            sendToUid(uid, 'profile:synced', {
+              profile,
+              transactions: dbStore.transactions[uid] || [],
+              connections: dbStore.connections[uid] || [],
+            });
+            broadcastPresenceAndRooms();
+          }
+          return;
+        }
+
         if (type === 'game:round_complete') {
           const isPractice = Boolean(payload?.isPractice);
           const gameType = (payload?.gameType || 'plinko') as GameType;
@@ -537,10 +784,15 @@ async function startServer() {
           const payout = Math.max(0, Math.floor(Number(payload?.payout) || 0));
           const multiplier = Number(payload?.multiplier) || 0;
           const summary = String(payload?.summary || `${gameType} round`);
+          const clientChips = typeof payload?.clientChips === 'number' ? Math.max(0, Math.floor(payload.clientChips)) : null;
 
           if (!isPractice) {
             const netDelta = payout - wager;
-            profile.chips = Math.max(0, profile.chips + netDelta);
+            if (clientChips !== null) {
+              profile.chips = clientChips;
+            } else {
+              profile.chips = Math.max(0, profile.chips + netDelta);
+            }
             profile.gamesPlayed += 1;
             if (payout > 0) {
               profile.totalWon += payout;

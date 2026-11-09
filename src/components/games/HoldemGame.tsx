@@ -16,6 +16,7 @@ interface HoldemGameProps {
     multiplier: number;
     summary: string;
   }) => void;
+  onEmergencyBailout?: () => void;
 }
 
 type Suit = '♠' | '♥' | '♦' | '♣';
@@ -174,6 +175,7 @@ export const HoldemGame: React.FC<HoldemGameProps> = ({
   isSpectator,
   minBet,
   onCompleteRound,
+  onEmergencyBailout,
 }) => {
   const [wager, setWager] = useState<number>(Math.max(50, minBet));
   const [deck, setDeck] = useState<Card[]>([]);
@@ -560,8 +562,8 @@ export const HoldemGame: React.FC<HoldemGameProps> = ({
       </div>
 
       {/* Control Strip & Chip Rack */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-        <div className="lg:col-span-6 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-4 shadow-xl">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-center">
+        <div className="xl:col-span-6 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-4 shadow-xl">
           <div className="text-xs font-semibold text-amber-200 mb-2">Stake / Raise Amount:</div>
           <ChipRack
             balance={balance}
@@ -569,20 +571,32 @@ export const HoldemGame: React.FC<HoldemGameProps> = ({
             onChangeWager={(val: number) => setWager(val)}
             minBet={minBet}
             disabled={phase !== 'idle'}
+            onEmergencyBailout={onEmergencyBailout}
           />
         </div>
 
-        <div className="lg:col-span-6 flex flex-wrap items-center justify-end gap-2.5">
+        <div className="xl:col-span-6 flex flex-wrap items-center justify-end gap-2.5">
           {phase === 'idle' || phase === 'showdown' ? (
-            <button
-              type="button"
-              onClick={handleStartDeal}
-              disabled={isSpectator || wager > balance || wager < minBet}
-              className="px-6 py-3.5 btn-arcade-gold font-black rounded-xl text-sm flex items-center gap-2 cursor-pointer shadow-lg"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Deal Texas Hold'em ({wager.toLocaleString()} Chips)</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {balance < minBet && onEmergencyBailout && (
+                <button
+                  type="button"
+                  onClick={onEmergencyBailout}
+                  className="px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-stone-950 font-black text-xs uppercase tracking-wider cursor-pointer shadow-lg animate-pulse"
+                >
+                  ⚡ Claim +5,000 Bailout
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleStartDeal}
+                disabled={isSpectator || wager > balance || wager < minBet}
+                className="px-6 py-3.5 btn-arcade-gold font-black rounded-xl text-sm flex items-center gap-2 cursor-pointer shadow-lg"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Deal Texas Hold'em ({wager.toLocaleString()} Chips)</span>
+              </button>
+            </div>
           ) : (
             <>
               <button

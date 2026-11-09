@@ -16,6 +16,7 @@ interface ThreeCardPokerGameProps {
     multiplier: number;
     summary: string;
   }) => void;
+  onEmergencyBailout?: () => void;
 }
 
 type Suit = '♠' | '♥' | '♦' | '♣';
@@ -114,6 +115,7 @@ export const ThreeCardPokerGame: React.FC<ThreeCardPokerGameProps> = ({
   isSpectator,
   minBet,
   onCompleteRound,
+  onEmergencyBailout,
 }) => {
   const [anteBet, setAnteBet] = useState<number>(Math.max(25, minBet));
   const [pairPlusBet, setPairPlusBet] = useState<number>(0);
@@ -269,9 +271,9 @@ export const ThreeCardPokerGame: React.FC<ThreeCardPokerGameProps> = ({
   const cardSuitColor = (suit: Suit) => (suit === '♥' || suit === '♦' ? 'text-rose-400' : 'text-stone-200');
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
       {/* Left Paytable & Pair Plus Rules */}
-      <div className="lg:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+      <div className="xl:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-stone-800 pb-3">
             <div className="flex items-center gap-2">
@@ -342,12 +344,13 @@ export const ThreeCardPokerGame: React.FC<ThreeCardPokerGameProps> = ({
             onChangeWager={(val: number) => setAnteBet(val)}
             minBet={minBet}
             disabled={phase !== 'betting'}
+            onEmergencyBailout={onEmergencyBailout}
           />
         </div>
       </div>
 
       {/* Right Felt Table */}
-      <div className="lg:col-span-8 relative rounded-3xl p-6 sm:p-8 border-4 border-[#3d2719] bg-gradient-to-b from-[#0a2318] via-[#071911] to-[#040e0a] shadow-2xl flex flex-col justify-between min-h-[500px]">
+      <div className="xl:col-span-8 relative rounded-3xl p-6 sm:p-8 border-4 border-[#3d2719] bg-gradient-to-b from-[#0a2318] via-[#071911] to-[#040e0a] shadow-2xl flex flex-col justify-between min-h-[500px]">
         {/* Dealer Section */}
         <div className="flex flex-col items-center">
           <div className="flex items-center gap-2 mb-3">

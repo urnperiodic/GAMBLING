@@ -9,6 +9,7 @@ interface DiceGameProps {
   isPractice: boolean;
   isSpectator: boolean;
   minBet: number;
+  onEmergencyBailout?: () => void;
   onCompleteRound: (result: {
     wager: number;
     payout: number;
@@ -57,6 +58,7 @@ export const DiceGame: React.FC<DiceGameProps> = ({
   balance,
   isSpectator,
   minBet,
+  onEmergencyBailout,
   onCompleteRound,
 }) => {
   const [wager, setWager] = useState<number>(Math.max(10, minBet));
@@ -162,9 +164,9 @@ export const DiceGame: React.FC<DiceGameProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
       {/* Left Arcade Control Console */}
-      <div className="lg:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+      <div className="xl:col-span-4 bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
         <div className="space-y-4">
           <ChipRack
             wager={wager}
@@ -172,6 +174,7 @@ export const DiceGame: React.FC<DiceGameProps> = ({
             minBet={minBet}
             disabled={rolling || isSpectator}
             onChangeWager={setWager}
+            onEmergencyBailout={onEmergencyBailout}
           />
 
           {/* Mode Switcher */}
@@ -201,6 +204,16 @@ export const DiceGame: React.FC<DiceGameProps> = ({
             </div>
           </div>
 
+          {balance < minBet && onEmergencyBailout && (
+            <button
+              type="button"
+              onClick={onEmergencyBailout}
+              className="w-full py-2.5 px-3 rounded-xl text-xs font-extrabold bg-gradient-to-r from-emerald-600 to-amber-600 hover:from-emerald-500 hover:to-amber-500 text-stone-950 shadow-md uppercase tracking-wide cursor-pointer transition-transform active:scale-95"
+            >
+              ⚡ Broke? Request +5,000 Bailout
+            </button>
+          )}
+
           <button
             type="button"
             disabled={rolling || isSpectator || wager > balance || wager < minBet}
@@ -219,7 +232,7 @@ export const DiceGame: React.FC<DiceGameProps> = ({
       </div>
 
       {/* Right Dice Pit Arena */}
-      <div className="lg:col-span-8 casino-table-rail casino-felt-surface rounded-2xl p-6 flex flex-col justify-between min-h-[400px]">
+      <div className="xl:col-span-8 casino-table-rail casino-felt-surface rounded-2xl p-6 flex flex-col justify-between min-h-[400px]">
         {mode === 'precision' ? (
           <div className="my-auto space-y-6">
             {/* Big Telemetry Readout */}

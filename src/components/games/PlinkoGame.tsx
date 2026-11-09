@@ -3,6 +3,7 @@ import { sound } from '../../utils/sound';
 import { CHIP_THEMES, ChipThemeId, TableActivityEvent } from '../../types/casino';
 import { ChipRack } from './ChipRack';
 import confetti from 'canvas-confetti';
+import { ArrowLeftRight, Sparkles } from 'lucide-react';
 
 interface PlinkoGameProps {
   balance: number;
@@ -18,10 +19,12 @@ interface PlinkoGameProps {
     summary: string;
     extraVisual?: unknown;
   }) => void;
+  onEmergencyBailout?: () => void;
 }
 
 type RiskLevel = 'low' | 'medium' | 'high';
 type RowCount = 8 | 12 | 16;
+export type DropGate = 'left' | 'center' | 'right' | 'cycle';
 
 const MULTIPLIERS: Record<RowCount, Record<RiskLevel, number[]>> = {
   8: {
@@ -44,6 +47,8 @@ const MULTIPLIERS: Record<RowCount, Record<RiskLevel, number[]>> = {
 interface ActiveBall {
   id: string;
   wager: number;
+  startOffset: number;
+  gate: 'left' | 'center' | 'right';
   path: number[];
   currentRow: number;
   progress: number;
@@ -69,18 +74,21 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
   minBet,
   recentActivity,
   onCompleteRound,
+  onEmergencyBailout,
 }) => {
   const [wager, setWager] = useState<number>(Math.max(25, minBet));
   const [rows, setRows] = useState<RowCount>(12);
   const [risk, setRisk] = useState<RiskLevel>('medium');
+  const [dropGate, setDropGate] = useState<DropGate>('cycle');
   const [activeBucketHit, setActiveBucketHit] = useState<number | null>(null);
-  const [lastHits, setLastHits] = useState<Array<{ id: string; mult: number; payout: number }>>([]);
+  const [lastHits, setLastHits] = useState<Array<{ id: string; mult: number; payout: number; gate: string }>>([]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ballsRef = useRef<ActiveBall[]>([]);
   const pegFlashesRef = useRef<Map<string, number>>(new Map());
   const popupsRef = useRef<FloatingPopup[]>([]);
   const seenRemoteIdsRef = useRef<Set<string>>(new Set());
+  const cycleCounterRef = useRef<number>(0);
 
   const theme = CHIP_THEMES[chipTheme] || CHIP_THEMES['classic-brass'];
   const currentMultipliers = MULTIPLIERS[rows][risk];
@@ -93,26 +101,60 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
     }
   }, [recentActivity]);
 
-  const spawnSingleBall = (ballWager: number) => {
+  const spawnSingleBall = (ballWager: number, overrideGate?: 'left' | 'center' | 'right') => {
+    // 3 distinct spawn areas: Left (-1.5), Center (0), Right (+1.5)
+    let chosenGate: 'left' | 'center' | 'right';
+    if (overrideGate) {
+      chosenGate = overrideGate;
+    } else if (dropGate === 'cycle') {
+      const gates: Array<'left' | 'center' | 'right'> = ['left', 'center', 'right'];
+      chosenGate = gates[cycleCounterRef.current % 3];
+      cycleCounterRef.current += 1;
+    } else {
+      chosenGate = dropGate;
+    }
+
+    const startOffset = chosenGate === 'left' ? -1.5 : chosenGate === 'right' ? 1.5 : 0;
+
     const decisions: number[] = [];
-    let rightCount = 0;
+    let currentPos = startOffset;
     for (let r = 0; r < rows; r++) {
-      const goRight = Math.random() >= 0.5;
-      decisions.push(goRight ? 0.5 : -0.5);
-      if (goRight) rightCount++;
+      const maxSpan = (r + 2) / 2;
+      // Probabilistic deflection based on gravity and peg hit
+      let goRight = Math.random() >= 0.5;
+      if (currentPos <= -maxSpan + 0.5) goRight = true;
+      if (currentPos >= maxSpan - 0.5) goRight = false;
+
+      const delta = goRight ? 0.5 : -0.5;
+      decisions.push(delta);
+      currentPos += delta;
     }
 
     const mults = MULTIPLIERS[rows][risk];
-    const bucketIndex = Math.min(mults.length - 1, Math.max(0, rightCount));
+    // Map currentPos (-rows/2 .. +rows/2) into bucket index
+    const centerBucket = (mults.length - 1) / 2;
+    const bucketIndex = Math.min(
+      mults.length - 1,
+      Math.max(0, Math.round(centerBucket + currentPos))
+    );
     const multiplier = mults[bucketIndex];
+
+    const ballColor =
+      chosenGate === 'left'
+        ? '#38bdf8' // Sky blue
+        : chosenGate === 'right'
+        ? '#f43f5e' // Rose pink
+        : theme.primaryHex; // Gold/Brass
 
     ballsRef.current.push({
       id: `ball_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       wager: ballWager,
+      startOffset,
+      gate: chosenGate,
       path: decisions,
       currentRow: 0,
       progress: 0,
-      color: theme.primaryHex,
+      color: ballColor,
       finalBucket: bucketIndex,
       multiplier,
     });
@@ -130,6 +172,15 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
     }
   };
 
+  const dropTriPattern = () => {
+    if (isSpectator) return;
+    if (wager * 3 > balance || wager < minBet) return;
+    sound.playChipClick();
+    spawnSingleBall(wager, 'left');
+    setTimeout(() => spawnSingleBall(wager, 'center'), 100);
+    setTimeout(() => spawnSingleBall(wager, 'right'), 200);
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -140,7 +191,7 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
     const width = canvas.width;
     const height = canvas.height;
 
-    const topMargin = 48;
+    const topMargin = 52;
     const bottomMargin = 42;
     const usableHeight = height - topMargin - bottomMargin;
 
@@ -152,24 +203,39 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
       const maxCols = rows + 2;
       const colSpacing = Math.min(44, (width - 90) / maxCols);
 
-      // Draw Brass Ball Launcher Nozzle at top center
-      ctx.save();
-      ctx.fillStyle = '#292524';
-      ctx.strokeStyle = '#d4af37';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(width / 2 - 22, 4, 44, 24, 6);
-      ctx.fill();
-      ctx.stroke();
+      // Draw 3 DISTINCT BRASS LAUNCH GATES AT TOP
+      const chuteConfigs: Array<{ id: 'left' | 'center' | 'right'; x: number; label: string; color: string }> = [
+        { id: 'left', x: width / 2 - 2 * colSpacing, label: 'LEFT', color: '#38bdf8' },
+        { id: 'center', x: width / 2, label: 'CENTER', color: '#fbbf24' },
+        { id: 'right', x: width / 2 + 2 * colSpacing, label: 'RIGHT', color: '#f43f5e' },
+      ];
 
-      ctx.fillStyle = '#f59e0b';
-      ctx.font = 'bold 9px JetBrains Mono, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('DROP', width / 2, 19);
-      ctx.restore();
+      for (const chute of chuteConfigs) {
+        const isSelected = dropGate === chute.id || dropGate === 'cycle';
+        ctx.save();
+        ctx.fillStyle = isSelected ? '#1c1917' : '#0c0a09';
+        ctx.strokeStyle = isSelected ? chute.color : 'rgba(212, 175, 55, 0.35)';
+        ctx.lineWidth = isSelected ? 2.5 : 1.5;
+        ctx.beginPath();
+        ctx.roundRect(chute.x - 22, 6, 44, 24, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        // Indicator LED
+        ctx.beginPath();
+        ctx.arc(chute.x, 12, 3, 0, Math.PI * 2);
+        ctx.fillStyle = isSelected ? chute.color : '#57534e';
+        ctx.fill();
+
+        ctx.fillStyle = isSelected ? '#f5f5f4' : '#a8a29e';
+        ctx.font = 'bold 8px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(chute.label, chute.x, 24);
+        ctx.restore();
+      }
 
       // Draw Glowing Pyramid Side Guard Rails
-      const topHalfSpan = 1.6 * colSpacing;
+      const topHalfSpan = 2.4 * colSpacing;
       const bottomHalfSpan = ((rows + 2) / 2 + 0.6) * colSpacing;
       ctx.save();
       ctx.strokeStyle = 'rgba(212, 175, 55, 0.28)';
@@ -227,12 +293,16 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
           ball.progress = 0;
           ball.currentRow += 1;
 
-          let offsetCols = 0;
+          let offsetCols = ball.startOffset;
           for (let i = 0; i < ball.currentRow; i++) {
             offsetCols += ball.path[i];
           }
           const rIdx = ball.currentRow - 1;
-          const pegIndex = Math.round(offsetCols + (rIdx + 2) / 2);
+          const maxColsInRow = rIdx + 3;
+          const pegIndex = Math.min(
+            maxColsInRow - 1,
+            Math.max(0, Math.round(offsetCols + (rIdx + 2) / 2))
+          );
           pegFlashesRef.current.set(`${rIdx}_${pegIndex}`, now);
           sound.playPegTick(ball.currentRow);
         }
@@ -242,7 +312,7 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
           setActiveBucketHit(ball.finalBucket);
           setTimeout(() => setActiveBucketHit(null), 350);
 
-          let finalOffset = 0;
+          let finalOffset = ball.startOffset;
           for (let i = 0; i < rows; i++) finalOffset += ball.path[i];
           const landX = width / 2 + finalOffset * colSpacing;
 
@@ -256,7 +326,7 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
           });
 
           setLastHits((prev) =>
-            [{ id: ball.id, mult: ball.multiplier, payout }, ...prev].slice(0, 8)
+            [{ id: ball.id, mult: ball.multiplier, payout, gate: ball.gate }, ...prev].slice(0, 8)
           );
 
           if (ball.multiplier >= 5) {
@@ -272,12 +342,12 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
             wager: ball.wager,
             payout,
             multiplier: ball.multiplier,
-            summary: `Plinko ${ball.multiplier}x pocket (${rows} rows · ${risk})`,
+            summary: `Plinko ${ball.multiplier}x pocket (${ball.gate.toUpperCase()} Gate · ${rows} rows · ${risk})`,
           });
           continue;
         }
 
-        let prevOffset = 0;
+        let prevOffset = ball.startOffset;
         for (let i = 0; i < ball.currentRow; i++) {
           prevOffset += ball.path[i];
         }
@@ -289,7 +359,7 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
         const bounceArc = Math.sin(t * Math.PI) * -7;
         const currY = topMargin + (ball.currentRow + t) * rowSpacing + bounceArc;
 
-        // 3D Glossy Gold Ball
+        // 3D Glossy Plinko Ball
         ctx.beginPath();
         ctx.arc(currX, currY, 8.5, 0, Math.PI * 2);
         ctx.fillStyle = ball.color;
@@ -309,35 +379,37 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
 
       ballsRef.current = remainingBalls;
 
-      // Render Floating Score Popups
-      const activePopups: FloatingPopup[] = [];
-      for (const pop of popupsRef.current) {
-        const age = now - pop.born;
+      // Draw Floating Cashout Popups
+      const freshPopups: FloatingPopup[] = [];
+      for (const p of popupsRef.current) {
+        const age = now - p.born;
         if (age < 900) {
           const alpha = 1 - age / 900;
           ctx.save();
+          ctx.fillStyle = p.color;
           ctx.font = 'bold 12px JetBrains Mono, monospace';
-          ctx.fillStyle = pop.color;
-          ctx.globalAlpha = alpha;
           ctx.textAlign = 'center';
-          ctx.fillText(pop.text, pop.x, pop.y - (age / 900) * 34);
+          ctx.globalAlpha = alpha;
+          ctx.shadowColor = '#000000';
+          ctx.shadowBlur = 6;
+          ctx.fillText(p.text, p.x, p.y - (age / 900) * 32);
           ctx.restore();
-          activePopups.push(pop);
+          freshPopups.push(p);
         }
       }
-      popupsRef.current = activePopups;
+      popupsRef.current = freshPopups;
 
       animId = requestAnimationFrame(render);
     };
 
     animId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animId);
-  }, [rows, risk, onCompleteRound]);
+  }, [rows, risk, dropGate, onCompleteRound]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
       {/* Left Arcade Control Console */}
-      <div className="lg:col-span-4 flex flex-col justify-between bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 shadow-xl">
+      <div className="xl:col-span-4 flex flex-col justify-between bg-[#0c1813] border-2 border-amber-500/30 rounded-2xl p-5 shadow-xl">
         <div className="space-y-4">
           <ChipRack
             wager={wager}
@@ -345,7 +417,71 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
             minBet={minBet}
             disabled={isSpectator}
             onChangeWager={setWager}
+            onEmergencyBailout={onEmergencyBailout}
           />
+
+          {/* 3 Drop Gates Selector */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-[11px] uppercase tracking-wider text-amber-300 font-bold flex items-center gap-1">
+                <ArrowLeftRight className="w-3.5 h-3.5" />
+                <span>Plinko Drop Gate (3 Areas)</span>
+              </label>
+              <span className="text-[10px] font-mono text-stone-400">
+                {dropGate === 'cycle' ? 'Alternating 3 Gates' : `${dropGate.toUpperCase()} Gate`}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setDropGate('left')}
+                className={`py-2 px-1.5 rounded-lg text-[11px] font-extrabold flex flex-col items-center gap-0.5 cursor-pointer border transition-all ${
+                  dropGate === 'left'
+                    ? 'bg-sky-500/20 border-sky-400 text-sky-300 shadow-md'
+                    : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-white'
+                }`}
+              >
+                <span>⬅ Left</span>
+                <span className="text-[9px] font-mono text-stone-400">Gate 1</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDropGate('center')}
+                className={`py-2 px-1.5 rounded-lg text-[11px] font-extrabold flex flex-col items-center gap-0.5 cursor-pointer border transition-all ${
+                  dropGate === 'center'
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md'
+                    : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-white'
+                }`}
+              >
+                <span>⬆ Mid</span>
+                <span className="text-[9px] font-mono text-stone-400">Gate 2</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDropGate('right')}
+                className={`py-2 px-1.5 rounded-lg text-[11px] font-extrabold flex flex-col items-center gap-0.5 cursor-pointer border transition-all ${
+                  dropGate === 'right'
+                    ? 'bg-rose-500/20 border-rose-400 text-rose-300 shadow-md'
+                    : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-white'
+                }`}
+              >
+                <span>Right ➡</span>
+                <span className="text-[9px] font-mono text-stone-400">Gate 3</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDropGate('cycle')}
+                className={`py-2 px-1.5 rounded-lg text-[11px] font-extrabold flex flex-col items-center gap-0.5 cursor-pointer border transition-all ${
+                  dropGate === 'cycle'
+                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-md'
+                    : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-white'
+                }`}
+              >
+                <span>🎲 Cycle</span>
+                <span className="text-[9px] font-mono text-stone-400">Auto 3</span>
+              </button>
+            </div>
+          </div>
 
           {/* Risk Selector */}
           <div>
@@ -396,44 +532,58 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
           </div>
 
           {/* Arcade Launch Buttons */}
-          <div className="space-y-2.5 pt-1">
+          <div className="space-y-2 pt-1">
             <button
               type="button"
               disabled={isSpectator || wager > balance || wager < minBet}
               onClick={() => dropBall(1)}
-              className="btn-arcade-gold w-full py-3.5 px-5 rounded-xl font-extrabold text-sm tracking-wide uppercase cursor-pointer whitespace-nowrap shrink-0"
+              className="btn-arcade-gold w-full py-3 px-4 rounded-xl font-extrabold text-sm tracking-wide uppercase cursor-pointer flex items-center justify-center gap-2 shadow-lg"
             >
-              {isSpectator
-                ? 'Spectating Table'
-                : isPractice
-                ? `Drop Practice Ball (${wager.toLocaleString()})`
-                : `Drop Plinko Ball (${wager.toLocaleString()})`}
+              <Sparkles className="w-4 h-4" />
+              <span>
+                {isSpectator
+                  ? 'Spectating Table'
+                  : isPractice
+                  ? `Drop Ball (${wager.toLocaleString()})`
+                  : `Drop Ball (${wager.toLocaleString()} Chips)`}
+              </span>
+            </button>
+
+            {/* Tri-Drop button: drops 1 ball from each of the 3 gates */}
+            <button
+              type="button"
+              disabled={isSpectator || wager * 3 > balance || wager < minBet}
+              onClick={dropTriPattern}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-600 via-amber-600 to-rose-600 hover:opacity-95 text-white font-black text-xs uppercase tracking-wider cursor-pointer shadow-md flex items-center justify-center gap-1.5"
+            >
+              <span>⚡ Tri-Drop: All 3 Gates ({(wager * 3).toLocaleString()} Chips)</span>
             </button>
 
             <button
               type="button"
               disabled={isSpectator || wager * 5 > balance || wager < minBet}
               onClick={() => dropBall(5)}
-              className="btn-arcade-emerald w-full py-2.5 px-4 rounded-xl font-bold text-xs tracking-wide uppercase cursor-pointer whitespace-nowrap shrink-0"
+              className="btn-arcade-emerald w-full py-2 px-3 rounded-xl font-bold text-xs tracking-wide uppercase cursor-pointer"
             >
-              Rapid Burst: Drop 5 Balls ({(wager * 5).toLocaleString()})
+              Rapid Burst: 5 Balls ({(wager * 5).toLocaleString()})
             </button>
           </div>
         </div>
 
         {/* Multiplier Hit Strip */}
-        <div className="mt-5 pt-3.5 border-t border-stone-800">
-          <div className="text-[11px] uppercase tracking-wider text-stone-400 font-semibold mb-2">
-            Recent Pocket Hits
+        <div className="mt-4 pt-3 border-t border-stone-800">
+          <div className="text-[11px] uppercase tracking-wider text-stone-400 font-semibold mb-2 flex items-center justify-between">
+            <span>Recent Pocket Hits</span>
+            <span className="text-[10px] text-amber-300 font-mono">53% Player Advantage</span>
           </div>
           {lastHits.length === 0 ? (
-            <p className="text-xs text-stone-500">Launch balls into the brass pyramid!</p>
+            <p className="text-xs text-stone-500">Launch balls through Left, Center, or Right gates!</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {lastHits.map((hit) => (
                 <span
                   key={hit.id}
-                  className={`font-mono-tabular text-xs font-bold px-2 py-1 rounded border ${
+                  className={`font-mono-tabular text-xs font-bold px-2 py-1 rounded border flex items-center gap-1 ${
                     hit.mult >= 5
                       ? 'bg-rose-950/90 border-rose-400 text-rose-200'
                       : hit.mult >= 1
@@ -441,7 +591,8 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
                       : 'bg-stone-900 border-stone-700 text-stone-400'
                   }`}
                 >
-                  {hit.mult}x
+                  <span className="text-[9px] uppercase text-stone-400 font-sans">{hit.gate[0]}</span>
+                  <span>{hit.mult}x</span>
                 </span>
               ))}
             </div>
@@ -449,40 +600,51 @@ export const PlinkoGame: React.FC<PlinkoGameProps> = ({
         </div>
       </div>
 
-      {/* Right Arcade Plinko Cabinet */}
-      <div className="lg:col-span-8 casino-table-rail casino-felt-surface rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
-        <div className="flex items-center justify-between text-xs text-amber-200/90 font-semibold mb-1">
-          <span>PLINKO GRAND PYRAMID · {rows} ROWS</span>
-          <span className="font-mono-tabular text-amber-300">
-            JACKPOT POCKET: {Math.max(...currentMultipliers)}X
-          </span>
+      {/* Right Canvas Pyramid Felt Container */}
+      <div className="xl:col-span-8 relative bg-gradient-to-b from-[#06140e] via-[#081b13] to-[#040c08] border-2 border-amber-500/35 rounded-2xl p-3 flex flex-col items-center justify-between min-h-[540px] shadow-2xl">
+        <div className="w-full flex items-center justify-between px-3 py-1 border-b border-amber-500/20 text-xs text-stone-300">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+            <span className="font-extrabold uppercase text-amber-300">Mechanical Brass Plinko</span>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[11px] text-stone-400">
+            <span>{rows} Rows</span>
+            <span>·</span>
+            <span className="uppercase text-amber-200">{risk} Risk</span>
+            <span>·</span>
+            <span className="text-emerald-300 font-bold">3 Launch Chutes</span>
+          </div>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center">
+        {/* Canvas Display */}
+        <div className="w-full flex-1 flex items-center justify-center py-2 relative overflow-hidden">
           <canvas
             ref={canvasRef}
-            width={680}
-            height={380}
-            className="w-full max-w-[680px] h-auto"
+            width={720}
+            height={460}
+            className="w-full max-w-[720px] max-h-[460px] object-contain select-none"
           />
+        </div>
 
-          {/* 3D Beveled Multiplier Buckets */}
-          <div className="w-full max-w-[640px] flex items-center justify-center gap-1 mt-1 px-2">
+        {/* Bottom Multiplier Buckets */}
+        <div className="w-full pt-1 pb-1">
+          <div className="flex items-center justify-center gap-1 px-2">
             {currentMultipliers.map((mult, idx) => {
-              const isEdge = mult >= 10;
-              const isMid = mult >= 1.5 && mult < 10;
               const isHit = activeBucketHit === idx;
+              const isExtreme = mult >= 10;
+              const isWin = mult >= 1;
               return (
                 <div
                   key={idx}
-                  className={`flex-1 py-2 rounded-md text-center font-mono-tabular text-[11px] font-extrabold border-b-4 transition-transform ${
-                    isHit ? '-translate-y-2 scale-110 ring-2 ring-white' : ''
-                  } ${
-                    isEdge
-                      ? 'bg-rose-600 border-rose-900 text-white shadow-md'
-                      : isMid
-                      ? 'bg-amber-400 border-amber-700 text-stone-950 shadow-md'
-                      : 'bg-stone-800 border-stone-950 text-stone-300'
+                  className={`flex-1 min-w-[28px] max-w-[48px] py-2 rounded-lg text-center font-mono-tabular text-[10px] font-black transition-all ${
+                    isHit
+                      ? 'scale-115 -translate-y-1.5 shadow-[0_0_20px_#fde047] z-20 ' +
+                        (isExtreme ? 'bg-rose-500 text-white border-2 border-white' : 'bg-yellow-300 text-stone-950')
+                      : isExtreme
+                      ? 'bg-rose-950 border border-rose-500/70 text-rose-300 shadow-sm'
+                      : isWin
+                      ? 'bg-amber-950/80 border border-amber-500/50 text-amber-300'
+                      : 'bg-stone-900/90 border border-stone-800 text-stone-400'
                   }`}
                 >
                   {mult}x
