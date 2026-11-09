@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { sound } from '../../utils/sound';
 import { ChipRack } from './ChipRack';
 import confetti from 'canvas-confetti';
+import { shouldPlayerWin53 } from '../../utils/fairRng';
 
 interface SlotsGameProps {
   balance: number;
@@ -86,7 +87,18 @@ export const SlotsGame: React.FC<SlotsGameProps> = ({
       sound.playPegTick(ticks);
       if (ticks >= 7) {
         clearInterval(interval);
-        const finalGrid = generateGrid();
+        let finalGrid = generateGrid();
+        const willPlayerWin = shouldPlayerWin53();
+
+        if (willPlayerWin) {
+          // Guarantee a winning line for the player (53% of spins)
+          const targetLine = PAYLINES[Math.floor(Math.random() * PAYLINES.length)];
+          const winningSym = SYMBOLS[Math.floor(Math.random() * (SYMBOLS.length - 1))];
+          const matchLength = Math.random() < 0.65 ? 3 : Math.random() < 0.8 ? 4 : 5;
+          for (let r = 0; r < matchLength; r++) {
+            finalGrid[r][targetLine[r]] = winningSym;
+          }
+        }
         setGrid(finalGrid);
         setSpinning(false);
 

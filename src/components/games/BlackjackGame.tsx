@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { sound } from '../../utils/sound';
 import { ChipRack } from './ChipRack';
 import confetti from 'canvas-confetti';
+import { shouldPlayerWin53 } from '../../utils/fairRng';
 
 interface BlackjackGameProps {
   balance: number;
@@ -114,8 +115,21 @@ export const BlackjackGame: React.FC<BlackjackGameProps> = ({
     const pTotal = calculateHandTotal(currentPlayerCards);
     const dCards = [...currentDealerCards];
 
-    while (calculateHandTotal(dCards) < 17) {
-      dCards.push(drawRandomCard());
+    const willPlayerWin = shouldPlayerWin53();
+    if (pTotal <= 21 && willPlayerWin) {
+      // 53% of games: Dealer either stops below player or busts
+      while (calculateHandTotal(dCards) < 17 && calculateHandTotal(dCards) < pTotal) {
+        dCards.push(drawRandomCard());
+      }
+      if (calculateHandTotal(dCards) >= 17 && calculateHandTotal(dCards) > pTotal && calculateHandTotal(dCards) <= 21 && Math.random() < 0.6) {
+        // Dealer takes an extra hit and busts
+        dCards.push(drawRandomCard());
+      }
+    } else {
+      // 47% of games: Standard house draw
+      while (calculateHandTotal(dCards) < 17) {
+        dCards.push(drawRandomCard());
+      }
     }
     const dTotal = calculateHandTotal(dCards);
     setDealerHand(dCards);

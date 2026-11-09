@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { sound } from '../../utils/sound';
 import { ChipRack } from './ChipRack';
 import confetti from 'canvas-confetti';
+import { shouldPlayerWin53, getRandomInt } from '../../utils/fairRng';
 
 interface DiceGameProps {
   balance: number;
@@ -80,8 +81,14 @@ export const DiceGame: React.FC<DiceGameProps> = ({
 
     setTimeout(() => {
       setRolling(false);
+      const willPlayerWin = shouldPlayerWin53();
       if (mode === 'precision') {
-        const rolled = Math.floor(Math.random() * 100) + 1;
+        let rolled: number;
+        if (willPlayerWin) {
+          rolled = direction === 'over' ? getRandomInt(Math.min(99, target + 1), 100) : getRandomInt(1, Math.max(2, target - 1));
+        } else {
+          rolled = direction === 'over' ? getRandomInt(1, target) : getRandomInt(target, 100);
+        }
         setLastPercentileRoll(rolled);
         const won = direction === 'over' ? rolled > target : rolled < target;
         const payout = won ? Math.round(wager * precisionMultiplier) : 0;
@@ -103,8 +110,19 @@ export const DiceGame: React.FC<DiceGameProps> = ({
           summary,
         });
       } else {
-        const d1 = Math.floor(Math.random() * 6) + 1;
-        const d2 = Math.floor(Math.random() * 6) + 1;
+        let d1: number;
+        let d2: number;
+        if (willPlayerWin) {
+          if (crapsBet === 'lucky7') { d1 = 4; d2 = 3; }
+          else if (crapsBet === 'high_8_12') { d1 = 5; d2 = 4; }
+          else if (crapsBet === 'low_2_6') { d1 = 2; d2 = 2; }
+          else { d1 = 3; d2 = 3; } // doubles
+        } else {
+          if (crapsBet === 'lucky7') { d1 = 2; d2 = 3; }
+          else if (crapsBet === 'high_8_12') { d1 = 2; d2 = 3; }
+          else if (crapsBet === 'low_2_6') { d1 = 5; d2 = 4; }
+          else { d1 = 2; d2 = 3; } // non-doubles
+        }
         const sum = d1 + d2;
         setDicePair([d1, d2]);
 

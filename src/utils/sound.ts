@@ -120,6 +120,59 @@ class SoundEngine {
       // Ignore
     }
   }
+
+  playGoldChime() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const freqs = [1046.5, 1318.5, 1567.98, 2093.0];
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        const startTime = ctx.currentTime + idx * 0.05;
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.08, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.36);
+      });
+    } catch {
+      // Ignore
+    }
+  }
+
+  playUpgradeFanfare() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const chords = [
+        [523.25, 659.25],
+        [659.25, 783.99],
+        [783.99, 1046.5],
+        [1046.5, 1318.5, 1567.98],
+      ];
+      chords.forEach((chord, step) => {
+        const startTime = ctx.currentTime + step * 0.12;
+        chord.forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(0.09, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + 0.46);
+        });
+      });
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 export const sound = new SoundEngine();

@@ -9,7 +9,7 @@ import { createServer as createViteServer } from 'vite';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-type GameType = 'plinko' | 'blackjack' | 'roulette' | 'slots' | 'videopoker' | 'dice';
+type GameType = 'plinko' | 'blackjack' | 'roulette' | 'slots' | 'videopoker' | 'dice' | 'holdem' | 'threecardpoker';
 type ChipThemeId = 'classic-brass' | 'obsidian-gold' | 'emerald-royale' | 'crimson-velvet' | 'cyber-platinum';
 type TableThemeId = 'emerald-felt' | 'mahogany-club' | 'midnight-velvet' | 'royal-burgundy';
 type PresenceStatus = 'online' | 'in-game' | 'spectating' | 'offline';
@@ -152,6 +152,8 @@ function initDefaultRooms() {
     { id: 'room_slots_main', name: 'Velvet Reels Mechanical Gallery', gameType: 'slots', minBet: 20 },
     { id: 'room_poker_main', name: 'Jacks or Better Draw Club', gameType: 'videopoker', minBet: 25 },
     { id: 'room_dice_main', name: 'High-Roller Brass Dice Table', gameType: 'dice', minBet: 10 },
+    { id: 'room_holdem_main', name: "High-Stakes Texas Hold'em Salon", gameType: 'holdem', minBet: 50 },
+    { id: 'room_threecard_main', name: 'Royal Three Card Poker Club', gameType: 'threecardpoker', minBet: 25 },
   ];
 
   for (const d of defaults) {
@@ -1015,6 +1017,135 @@ async function startServer() {
     });
   });
 
+  // REST endpoint for high-society leaderboard
+  app.get('/api/leaderboard', (req, res) => {
+    const category = String(req.query.category || 'chips');
+    const seededLegends = [
+      {
+        uid: 'legend_1',
+        displayName: 'Lady Eleanor Vance',
+        chips: 4850000,
+        biggestWin: 920000,
+        level: 48,
+        xp: 24500,
+        gamesPlayed: 142,
+        estateTier: 'palace',
+        estateTierName: 'Celestial Sovereign Palace',
+        estatePrestige: 42000,
+        chipTheme: 'obsidian-gold',
+        tableTheme: 'royal-burgundy',
+      },
+      {
+        uid: 'legend_2',
+        displayName: 'Baron Von Brass',
+        chips: 3200000,
+        biggestWin: 650000,
+        level: 39,
+        xp: 19800,
+        gamesPlayed: 118,
+        estateTier: 'chateau',
+        estateTierName: 'High-Roller Gilded Chateau',
+        estatePrestige: 24500,
+        chipTheme: 'classic-brass',
+        tableTheme: 'mahogany-club',
+      },
+      {
+        uid: 'legend_3',
+        displayName: 'The Velvet Shark',
+        chips: 2150000,
+        biggestWin: 480000,
+        level: 31,
+        xp: 15600,
+        gamesPlayed: 94,
+        estateTier: 'villa',
+        estateTierName: 'Monte Carlo Riviera Villa',
+        estatePrestige: 16800,
+        chipTheme: 'emerald-royale',
+        tableTheme: 'emerald-felt',
+      },
+      {
+        uid: 'legend_4',
+        displayName: 'Countess Isabella',
+        chips: 1450000,
+        biggestWin: 310000,
+        level: 26,
+        xp: 13200,
+        gamesPlayed: 76,
+        estateTier: 'villa',
+        estateTierName: 'Monte Carlo Riviera Villa',
+        estatePrestige: 11400,
+        chipTheme: 'crimson-velvet',
+        tableTheme: 'midnight-velvet',
+      },
+      {
+        uid: 'legend_5',
+        displayName: 'Duke Sterling',
+        chips: 890000,
+        biggestWin: 220000,
+        level: 21,
+        xp: 10500,
+        gamesPlayed: 62,
+        estateTier: 'penthouse',
+        estateTierName: 'Velvet & Brass Penthouse',
+        estatePrestige: 7200,
+        chipTheme: 'cyber-platinum',
+        tableTheme: 'mahogany-club',
+      },
+      {
+        uid: 'legend_6',
+        displayName: 'Jasper "Snake-Eyes" Boone',
+        chips: 620000,
+        biggestWin: 165000,
+        level: 17,
+        xp: 8600,
+        gamesPlayed: 51,
+        estateTier: 'penthouse',
+        estateTierName: 'Velvet & Brass Penthouse',
+        estatePrestige: 4900,
+        chipTheme: 'classic-brass',
+        tableTheme: 'emerald-felt',
+      },
+    ];
+
+    const entriesMap = new Map<string, any>();
+    for (const leg of seededLegends) {
+      entriesMap.set(leg.uid, leg);
+    }
+
+    for (const p of Object.values(dbStore.profiles)) {
+      entriesMap.set(p.uid, {
+        uid: p.uid,
+        displayName: p.displayName,
+        chips: p.chips,
+        biggestWin: p.biggestWin,
+        level: p.level,
+        xp: p.xp,
+        gamesPlayed: p.gamesPlayed,
+        estateTier: p.level >= 25 ? 'palace' : p.level >= 15 ? 'villa' : p.level >= 5 ? 'penthouse' : 'speakeasy',
+        estateTierName: p.level >= 25 ? 'Celestial Sovereign Palace' : p.level >= 15 ? 'Monte Carlo Riviera Villa' : p.level >= 5 ? 'Velvet & Brass Penthouse' : 'Victorian Speakeasy Suite',
+        estatePrestige: p.level * 450,
+        chipTheme: p.chipTheme,
+        tableTheme: p.tableTheme,
+      });
+    }
+
+    const entries = Array.from(entriesMap.values());
+    if (category === 'biggestWin') {
+      entries.sort((a, b) => b.biggestWin - a.biggestWin);
+    } else if (category === 'estate') {
+      entries.sort((a, b) => b.estatePrestige - a.estatePrestige);
+    } else if (category === 'level') {
+      entries.sort((a, b) => (b.level !== a.level ? b.level - a.level : b.xp - a.xp));
+    } else {
+      entries.sort((a, b) => b.chips - a.chips);
+    }
+
+    res.json({
+      category,
+      entries: entries.slice(0, 50).map((item, idx) => ({ ...item, rank: idx + 1 })),
+    });
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -1029,7 +1160,7 @@ async function startServer() {
     });
   }
 
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Velvet & Brass Social Club server listening on http://0.0.0.0:${PORT}`);
   });

@@ -33,10 +33,16 @@ import { RouletteGame } from './components/games/RouletteGame';
 import { SlotsGame } from './components/games/SlotsGame';
 import { VideoPokerGame } from './components/games/VideoPokerGame';
 import { DiceGame } from './components/games/DiceGame';
+import { HoldemGame } from './components/games/HoldemGame';
+import { ThreeCardPokerGame } from './components/games/ThreeCardPokerGame';
 import { SocialSidebar } from './components/SocialSidebar';
 import { VaultProgressionModal } from './components/VaultProgressionModal';
 import { CreateRoomModal } from './components/CreateRoomModal';
 import { VaultPuzzleModal } from './components/VaultPuzzleModal';
+import { LeaderboardModal } from './components/leaderboard/LeaderboardModal';
+import { EstateHomeModal } from './components/estate/EstateHomeModal';
+import { SaveManagerModal } from './components/save/SaveManagerModal';
+import { PlayerEstateData } from './types/casino';
 import { sound } from './utils/sound';
 import {
   Eye,
@@ -65,11 +71,16 @@ import {
   Plus,
   Clock,
   MessageSquare,
+  Building,
+  Download,
+  HardDrive,
+  Award,
 } from 'lucide-react';
 
 const LOCAL_UID_KEY = 'vb_parlor_anon_uid_v1';
 const LOCAL_PROFILE_STORAGE_KEY = 'vb_parlor_profile_cache_v1';
 const LOCAL_NICKNAME_KEY = 'vb_parlor_nickname_v1';
+const LOCAL_ESTATE_STORAGE_KEY = 'vb_parlor_estate_v1';
 
 function getOrCreateLocalAnonymousUid(): string {
   const existing = localStorage.getItem(LOCAL_UID_KEY);
@@ -129,6 +140,32 @@ const DEFAULT_ROOMS: MultiplayerRoom[] = [
     gameType: 'slots',
     isPrivate: false,
     minBet: 10,
+    status: 'open',
+    participants: [],
+    recentActivity: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'room_holdem_main',
+    hostId: 'house',
+    hostName: 'The House',
+    name: "High-Stakes Texas Hold'em Salon",
+    gameType: 'holdem',
+    isPrivate: false,
+    minBet: 50,
+    status: 'open',
+    participants: [],
+    recentActivity: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'room_threecard_main',
+    hostId: 'house',
+    hostName: 'The House',
+    name: 'Royal Three Card Poker Table',
+    gameType: 'threecardpoker',
+    isPrivate: false,
+    minBet: 25,
     status: 'open',
     participants: [],
     recentActivity: [],
@@ -217,6 +254,38 @@ export default function App() {
   const [isPracticeMode, setIsPracticeMode] = useState<boolean>(false);
   const [practiceChips, setPracticeChips] = useState<number>(10000);
 
+  const [estate, setEstate] = useState<PlayerEstateData>(() => {
+    try {
+      const cached = localStorage.getItem(LOCAL_ESTATE_STORAGE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed.tier === 'string') {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return {
+      tier: 'speakeasy',
+      goldBars: 0,
+      unlockedDecorations: ['chesterfield_sofa', 'gaslight_chandeliers', 'walnut_herringbone', 'view_brick_cellar'],
+      equippedDecorations: {
+        seating: 'chesterfield_sofa',
+        lighting: 'gaslight_chandeliers',
+        flooring: 'walnut_herringbone',
+        view: 'view_brick_cellar',
+      },
+      totalPrestige: 250,
+      lastDividendClaim: new Date().toISOString(),
+      totalDividendsCollected: 0,
+    };
+  });
+
+  const [leaderboardModalOpen, setLeaderboardModalOpen] = useState<boolean>(false);
+  const [estateModalOpen, setEstateModalOpen] = useState<boolean>(false);
+  const [saveModalOpen, setSaveModalOpen] = useState<boolean>(false);
+
   const [vaultModalOpen, setVaultModalOpen] = useState<boolean>(false);
   const [vaultSection, setVaultSection] = useState<'vault' | 'ledger' | 'cosmetics'>('vault');
   const [createRoomOpen, setCreateRoomOpen] = useState<boolean>(false);
@@ -249,6 +318,14 @@ export default function App() {
       // ignore storage quota errors
     }
   }, [profile]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_ESTATE_STORAGE_KEY, JSON.stringify(estate));
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [estate]);
 
   const showTempNotice = useCallback((msg: string) => {
     setSocialNotice(msg);
@@ -690,7 +767,9 @@ export default function App() {
     { id: 'roulette', label: 'Roulette', icon: <Compass className="w-4 h-4" /> },
     { id: 'slots', label: 'Slots', icon: <Coins className="w-4 h-4" /> },
     { id: 'blackjack', label: 'Blackjack', icon: <Spade className="w-4 h-4" /> },
-    { id: 'videopoker', label: 'Poker', icon: <Crown className="w-4 h-4" /> },
+    { id: 'holdem', label: "Hold'em", icon: <Crown className="w-4 h-4" /> },
+    { id: 'threecardpoker', label: '3-Card', icon: <Award className="w-4 h-4" /> },
+    { id: 'videopoker', label: 'Video Poker', icon: <Gamepad2 className="w-4 h-4" /> },
     { id: 'dice', label: 'Dice', icon: <Dices className="w-4 h-4" /> },
   ];
 
@@ -739,14 +818,32 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setVaultSection('ledger');
-                setVaultModalOpen(true);
-              }}
+              onClick={() => setLeaderboardModalOpen(true)}
               className="flex items-center gap-1.5 hover:text-amber-300 transition-colors cursor-pointer"
             >
               <Trophy className="w-3.5 h-3.5 text-amber-400" />
               <span>Leaderboard</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setEstateModalOpen(true)}
+              className="flex items-center gap-1.5 hover:text-amber-300 transition-colors cursor-pointer"
+            >
+              <Building className="w-3.5 h-3.5 text-amber-300" />
+              <span className="flex items-center gap-1">
+                <span>The Grand Estate</span>
+                <span className="px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 text-[10px] font-black uppercase">
+                  {estate.tier}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSaveModalOpen(true)}
+              className="flex items-center gap-1.5 hover:text-emerald-300 transition-colors cursor-pointer"
+            >
+              <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Save &amp; Backup</span>
             </button>
             <button
               type="button"
@@ -1299,6 +1396,121 @@ export default function App() {
                     </div>
                   </section>
                 )}
+
+                {/* DEDICATED POKER SALON SHOWCASE */}
+                <section className="bg-gradient-to-r from-[#170e08] via-[#24150b] to-[#120b06] border border-amber-600/35 rounded-3xl p-4 sm:p-5 shadow-2xl relative overflow-hidden">
+                  <div className="absolute right-0 top-0 w-80 h-full bg-gradient-to-l from-amber-500/10 to-transparent pointer-events-none" />
+                  <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
+                        <Spade className="w-4 h-4 fill-amber-400" />
+                      </div>
+                      <div>
+                        <h2 className="font-display text-base sm:text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                          The Poker Salon & Card Rooms
+                          <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                            3 Distinct Variants
+                          </span>
+                        </h2>
+                        <p className="text-xs text-amber-200/70">
+                          Authentic poker rooms with 53% win rate calibrated odds, custom paytables, and dynamic bets.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 relative z-10">
+                    {/* Texas Hold'em */}
+                    <div
+                      onClick={() => handleQuickPlayGame('holdem')}
+                      className="group rounded-2xl p-4 bg-gradient-to-br from-[#1b2b20] to-[#0d1711] border border-emerald-500/30 hover:border-emerald-400 transition-all cursor-pointer shadow-lg hover:shadow-emerald-900/30 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                            Community Cards
+                          </span>
+                          <span className="text-xs font-mono text-stone-400">Min 50 Chips</span>
+                        </div>
+                        <h3 className="font-display text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
+                          Texas Hold'em
+                        </h3>
+                        <p className="text-xs text-stone-300 mt-1 leading-relaxed">
+                          Hole cards, Flop, Turn & River betting rounds against high-roller AI bots.
+                        </p>
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-emerald-500/20 flex items-center justify-between">
+                        <div className="flex -space-x-2">
+                          <span className="w-6 h-8 rounded bg-white text-stone-900 font-bold text-[9px] flex items-center justify-center border border-stone-300 shadow">A♠</span>
+                          <span className="w-6 h-8 rounded bg-white text-rose-600 font-bold text-[9px] flex items-center justify-center border border-stone-300 shadow">K♥</span>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-300 group-hover:underline flex items-center gap-1">
+                          Take a Seat →
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Three Card Poker */}
+                    <div
+                      onClick={() => handleQuickPlayGame('threecardpoker')}
+                      className="group rounded-2xl p-4 bg-gradient-to-br from-[#2a170f] to-[#140b07] border border-amber-500/30 hover:border-amber-400 transition-all cursor-pointer shadow-lg hover:shadow-amber-900/30 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-400/30">
+                            Dealer Duel
+                          </span>
+                          <span className="text-xs font-mono text-amber-300/80">Pair Plus 40:1</span>
+                        </div>
+                        <h3 className="font-display text-base font-bold text-white group-hover:text-amber-300 transition-colors">
+                          Three Card Poker
+                        </h3>
+                        <p className="text-xs text-stone-300 mt-1 leading-relaxed">
+                          Fast table poker vs Dealer with Ante, Play raise, and high-paying Pair Plus side bets.
+                        </p>
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-amber-500/20 flex items-center justify-between">
+                        <div className="flex -space-x-1.5">
+                          <span className="w-6 h-8 rounded bg-white text-stone-900 font-bold text-[9px] flex items-center justify-center border border-stone-300 shadow">Q♠</span>
+                          <span className="w-6 h-8 rounded bg-white text-stone-900 font-bold text-[9px] flex items-center justify-center border border-stone-300 shadow">Q♦</span>
+                          <span className="w-6 h-8 rounded bg-white text-stone-900 font-bold text-[9px] flex items-center justify-center border border-stone-300 shadow">Q♣</span>
+                        </div>
+                        <span className="text-xs font-bold text-amber-300 group-hover:underline flex items-center gap-1">
+                          Play Cards →
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Video Poker */}
+                    <div
+                      onClick={() => handleQuickPlayGame('videopoker')}
+                      className="group rounded-2xl p-4 bg-gradient-to-br from-[#12242b] to-[#0a1418] border border-sky-500/30 hover:border-sky-400 transition-all cursor-pointer shadow-lg hover:shadow-sky-900/30 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-400/30">
+                            3 Paytables
+                          </span>
+                          <span className="text-xs font-mono text-amber-300">Royal 800X</span>
+                        </div>
+                        <h3 className="font-display text-base font-bold text-white group-hover:text-sky-300 transition-colors">
+                          Video Poker Multi-Game
+                        </h3>
+                        <p className="text-xs text-stone-300 mt-1 leading-relaxed">
+                          Select Jacks or Better, Deuces Wild (2s are wild), or Double Double Bonus with hold/draw.
+                        </p>
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-sky-500/20 flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-sky-300 bg-sky-950/60 px-2 py-0.5 rounded border border-sky-500/30">
+                          Jacks · Deuces · Bonus
+                        </span>
+                        <span className="text-xs font-bold text-sky-300 group-hover:underline flex items-center gap-1">
+                          Draw 5 →
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
 
                 {/* SECTION 2: TOP 1–5 PLAYER TABLES */}
                 <section className="space-y-2.5">
@@ -1893,6 +2105,24 @@ export default function App() {
                       onCompleteRound={handleCompleteRound}
                     />
                   )}
+                  {activeRoom.gameType === 'holdem' && (
+                    <HoldemGame
+                      balance={effectiveBalance}
+                      isPractice={isPracticeMode}
+                      isSpectator={tableRole === 'spectator'}
+                      minBet={activeRoom.minBet}
+                      onCompleteRound={handleCompleteRound}
+                    />
+                  )}
+                  {activeRoom.gameType === 'threecardpoker' && (
+                    <ThreeCardPokerGame
+                      balance={effectiveBalance}
+                      isPractice={isPracticeMode}
+                      isSpectator={tableRole === 'spectator'}
+                      minBet={activeRoom.minBet}
+                      onCompleteRound={handleCompleteRound}
+                    />
+                  )}
                 </div>
               )
             )}
@@ -2182,6 +2412,58 @@ export default function App() {
             setRooms((prev) => [createdRoom, ...prev]);
             enterLocalRoom(createdRoom, 'player');
           }
+        }}
+      />
+
+      {/* High-Society Leaderboard Modal */}
+      <LeaderboardModal
+        isOpen={leaderboardModalOpen}
+        onClose={() => setLeaderboardModalOpen(false)}
+        currentUser={profile}
+        userEstate={estate}
+        onlinePlayers={onlinePlayers}
+      />
+
+      {/* The Grand Estate & Penthouse Decorating Modal */}
+      <EstateHomeModal
+        isOpen={estateModalOpen}
+        onClose={() => setEstateModalOpen(false)}
+        profile={profile}
+        estate={estate}
+        onUpdateProfile={(updates) => setProfile((prev) => ({ ...prev, ...updates }))}
+        onUpdateEstate={(updates) => setEstate((prev) => ({ ...prev, ...updates }))}
+        onAddTransaction={(type, game, amount, summary) => {
+          const tx: ChipTransactionItem = {
+            id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            uid: profile.uid,
+            type,
+            game,
+            amount,
+            balanceAfter: profile.chips + amount,
+            summary,
+            createdAt: new Date().toISOString(),
+          };
+          setTransactions((prev) => [tx, ...prev].slice(0, 80));
+        }}
+      />
+
+      {/* Cross-Device JSON Save Backup & Restore Modal */}
+      <SaveManagerModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        profile={profile}
+        estate={estate}
+        transactions={transactions}
+        onRestoreSave={({ profile: importedProfile, estate: importedEstate, transactions: importedTx }) => {
+          setProfile(importedProfile);
+          if (importedEstate) setEstate(importedEstate);
+          if (importedTx) setTransactions(importedTx);
+          showTempNotice('Save file restored successfully!');
+          sendWs('profile:customize', {
+            displayName: importedProfile.displayName,
+            chipTheme: importedProfile.chipTheme,
+            tableTheme: importedProfile.tableTheme,
+          });
         }}
       />
     </div>

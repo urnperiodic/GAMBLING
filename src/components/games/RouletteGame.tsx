@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { sound } from '../../utils/sound';
 import confetti from 'canvas-confetti';
+import { shouldPlayerWin53 } from '../../utils/fairRng';
 
 interface RouletteGameProps {
   balance: number;
@@ -71,7 +72,39 @@ export const RouletteGame: React.FC<RouletteGameProps> = ({
     sound.playChipClick();
     setStatusMessage('Ivory ball in motion... No more bets!');
 
-    const outcome = Math.floor(Math.random() * 37);
+    // 53% Player Win / 47% House Win RNG Calibration
+    const willPlayerWin = shouldPlayerWin53();
+    const winningNumbers: number[] = [];
+    const losingNumbers: number[] = [];
+
+    for (let num = 0; num <= 36; num++) {
+      const isRed = RED_NUMBERS.has(num);
+      const isBlack = num !== 0 && !isRed;
+      let payout = 0;
+      for (const [spot, amount] of Object.entries(bets)) {
+        if (spot === `num_${num}`) payout += amount * 36;
+        else if (spot === 'red' && isRed) payout += amount * 2;
+        else if (spot === 'black' && isBlack) payout += amount * 2;
+        else if (spot === 'even' && num !== 0 && num % 2 === 0) payout += amount * 2;
+        else if (spot === 'odd' && num % 2 === 1) payout += amount * 2;
+        else if (spot === 'low' && num >= 1 && num <= 18) payout += amount * 2;
+        else if (spot === 'high' && num >= 19 && num <= 36) payout += amount * 2;
+        else if (spot === 'doz_1' && num >= 1 && num <= 12) payout += amount * 3;
+        else if (spot === 'doz_2' && num >= 13 && num <= 24) payout += amount * 3;
+        else if (spot === 'doz_3' && num >= 25 && num <= 36) payout += amount * 3;
+      }
+      if (payout > totalWager) winningNumbers.push(num);
+      else losingNumbers.push(num);
+    }
+
+    let outcome: number;
+    if (willPlayerWin && winningNumbers.length > 0) {
+      outcome = winningNumbers[Math.floor(Math.random() * winningNumbers.length)];
+    } else if (losingNumbers.length > 0) {
+      outcome = losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
+    } else {
+      outcome = Math.floor(Math.random() * 37);
+    }
     const pocketIdx = WHEEL_ORDER.indexOf(outcome);
     const pocketAngle = (pocketIdx / 37) * 360;
     const nextAngle = wheelAngle + 1080 + (360 - pocketAngle);
